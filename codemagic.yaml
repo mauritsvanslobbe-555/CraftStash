@@ -1,0 +1,85 @@
+workflows:
+  ios-build:
+    name: CraftStash iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.craftstash.app
+      vars:
+        XCODE_WORKSPACE: "CraftStash.xcodeproj/project.xcworkspace"
+        XCODE_SCHEME: "CraftStash"
+      xcode: latest
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        script: |
+          cd $CM_BUILD_DIR
+          xcodegen generate
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build iOS app
+        script: |
+          cd $CM_BUILD_DIR
+          xcodebuild build \
+            -project CraftStash.xcodeproj \
+            -scheme CraftStash \
+            -destination 'generic/platform=iOS' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+
+  ios-test:
+    name: CraftStash iOS Test (No signing)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        script: |
+          cd $CM_BUILD_DIR
+          xcodegen generate
+
+      - name: Build for simulator
+        script: |
+          cd $CM_BUILD_DIR
+          xcodebuild build \
+            -project CraftStash.xcodeproj \
+            -scheme CraftStash \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log

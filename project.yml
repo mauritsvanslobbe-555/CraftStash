@@ -1,0 +1,40 @@
+name: CraftStash
+options:
+  bundleIdPrefix: com.craftstash
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  CraftStash:
+    type: application
+    platform: iOS
+    sources:
+      - CraftStash
+    settings:
+      base:
+        INFOPLIST_FILE: CraftStash/Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.craftstash.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: CraftStash/CraftStash.entitlements
+    dependencies:
+      - target: CraftStashShareExtension
+
+  CraftStashShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - CraftStashShareExtension
+    settings:
+      base:
+        INFOPLIST_FILE: CraftStashShareExtension/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.craftstash.app.share-extension
+        CODE_SIGN_ENTITLEMENTS: CraftStashShareExtension/CraftStashShareExtension.entitlements
