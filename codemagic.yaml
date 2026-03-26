@@ -57,7 +57,7 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      xcode: latest
+      xcode: 16.2
 
     scripts:
       - name: Install XcodeGen
@@ -69,13 +69,17 @@ workflows:
           cd $CM_BUILD_DIR
           xcodegen generate
 
+      - name: List available simulators
+        script: |
+          xcrun simctl list devices available
+
       - name: Build for simulator
         script: |
           cd $CM_BUILD_DIR
           xcodebuild build \
             -project CraftStash.xcodeproj \
             -scheme CraftStash \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \

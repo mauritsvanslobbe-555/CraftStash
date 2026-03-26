@@ -33,6 +33,7 @@ targets:
     platform: iOS
     sources:
       - CraftStashShareExtension
+      - path: CraftStash/Services/SharedDataManager.swift
     settings:
       base:
         INFOPLIST_FILE: CraftStashShareExtension/Info.plist
