@@ -6,12 +6,20 @@ workflows:
 
     environment:
       ios_signing:
-        distribution_type: development
-        bundle_identifier: com.craftstash.app
+        distribution_type: app_store
+        bundle_identifier:
+          - com.craftstash.app
+          - com.craftstash.app.share-extension
+        provisioning_profiles:
+          - profile: craftstash_appstore
+            bundle_identifier: com.craftstash.app
+          - profile: craftstash_share_extension_appstore
+            bundle_identifier: com.craftstash.app.share-extension
       vars:
-        XCODE_WORKSPACE: "CraftStash.xcodeproj/project.xcworkspace"
         XCODE_SCHEME: "CraftStash"
-      xcode: latest
+        APP_STORE_CONNECT_ISSUER_ID: "69a6de7f-99b2-47e3-e053-5b8c7c11a4d1"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "4K47D5CA5J"
+      xcode: 16.2
 
     scripts:
       - name: Install XcodeGen
@@ -27,23 +35,34 @@ workflows:
         script: |
           xcode-project use-profiles
 
-      - name: Build iOS app
+      - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
-          xcodebuild build \
+          xcodebuild archive \
             -project CraftStash.xcodeproj \
             -scheme CraftStash \
             -destination 'generic/platform=iOS' \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -configuration Release \
+            -archivePath build/CraftStash.xcarchive \
+            DEVELOPMENT_TEAM=9959PXX99M \
+            -allowProvisioningUpdates
+
+          xcodebuild -exportArchive \
+            -archivePath build/CraftStash.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath build/ipa
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ipa/*.ipa
+      - build/CraftStash.xcarchive
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - "External Testers"
       email:
         recipients:
           - your-email@example.com
