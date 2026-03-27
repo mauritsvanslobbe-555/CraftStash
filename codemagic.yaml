@@ -4,12 +4,11 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
+    integrations:
+      app_store_connect: CodeMagic
+
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier:
-          - com.craftstash.app
-          - com.craftstash.app.share-extension
         provisioning_profiles:
           - profile: craftstash_appstore
             bundle_identifier: com.craftstash.app
@@ -17,8 +16,6 @@ workflows:
             bundle_identifier: com.craftstash.app.share-extension
       vars:
         XCODE_SCHEME: "CraftStash"
-        APP_STORE_CONNECT_ISSUER_ID: "69a6de7f-99b2-47e3-e053-5b8c7c11a4d1"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "4K47D5CA5J"
       xcode: 16.2
 
     scripts:
@@ -61,8 +58,6 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        beta_groups:
-          - "External Testers"
       email:
         recipients:
           - your-email@example.com
