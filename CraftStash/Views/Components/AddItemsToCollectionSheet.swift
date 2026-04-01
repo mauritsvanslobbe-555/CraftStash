@@ -59,6 +59,8 @@ struct AddItemsToCollectionSheet: View {
         collection.items?.contains(where: { $0.id == item.id }) ?? false
     }
 
+    @Environment(\.modelContext) private var modelContext
+
     private func toggleItem(_ item: CraftItem) {
         if isInCollection(item) {
             collection.items?.removeAll(where: { $0.id == item.id })
@@ -68,5 +70,6 @@ struct AddItemsToCollectionSheet: View {
             }
             collection.items?.append(item)
         }
+        try? modelContext.save()
     }
 }

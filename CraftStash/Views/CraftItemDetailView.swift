@@ -19,7 +19,16 @@ struct CraftItemDetailView: View {
                             .fill(Color(.secondarySystemBackground))
                             .frame(height: 240)
 
-                        if let thumbnailURL = item.thumbnailURL {
+                        if let thumbnailURL = item.thumbnailURL, thumbnailURL.isFileURL {
+                            if let data = try? Data(contentsOf: thumbnailURL),
+                               let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 240)
+                                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
+                            }
+                        } else if let thumbnailURL = item.thumbnailURL {
                             AsyncImage(url: thumbnailURL) { image in
                                 image
                                     .resizable()

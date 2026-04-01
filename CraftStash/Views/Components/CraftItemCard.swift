@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct CraftItemCard: View {
     let item: CraftItem
@@ -88,16 +89,28 @@ struct CraftItemCard: View {
                 .fill(platformGradient)
 
             if let thumbnailURL = item.thumbnailURL {
-                AsyncImage(url: thumbnailURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
+                if thumbnailURL.isFileURL {
+                    // Local image (screenshot)
+                    if let data = try? Data(contentsOf: thumbnailURL),
+                       let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                    case .failure:
+                    } else {
                         placeholderIcon
-                    default:
-                        ProgressView()
+                    }
+                } else {
+                    AsyncImage(url: thumbnailURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        case .failure:
+                            placeholderIcon
+                        default:
+                            ProgressView()
+                        }
                     }
                 }
             } else {
@@ -143,6 +156,8 @@ struct CraftItemCard: View {
             colors = [.purple, .pink, .orange]
         case "tiktok":
             colors = [.black, Color(red: 0.0, green: 0.96, blue: 0.88)]
+        case "screenshot":
+            colors = [Theme.color(for: "forest"), Theme.color(for: "mint")]
         default:
             colors = [Theme.color(for: "ocean"), Theme.color(for: "sky")]
         }

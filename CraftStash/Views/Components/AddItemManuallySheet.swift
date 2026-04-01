@@ -76,13 +76,17 @@ struct AddItemManuallySheet: View {
     }
 
     private func saveItem() {
-        let platform = detectPlatformSync(from: urlText)
+        let url = urlText.trimmingCharacters(in: .whitespaces)
+        let platform = detectPlatformSync(from: url)
+        let thumbnailURL = HomeView.generateThumbnailURL(for: url)
         let item = CraftItem(
             title: title.isEmpty ? "Knutselidee" : title,
-            urlString: urlText.trimmingCharacters(in: .whitespaces),
+            urlString: url,
+            thumbnailURLString: thumbnailURL,
             sourcePlatform: platform
         )
         modelContext.insert(item)
+        try? modelContext.save()
         dismiss()
     }
 

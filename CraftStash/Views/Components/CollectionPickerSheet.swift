@@ -79,5 +79,6 @@ struct CollectionPickerSheet: View {
             }
             collection.items?.append(item)
         }
+        try? modelContext.save()
     }
 }

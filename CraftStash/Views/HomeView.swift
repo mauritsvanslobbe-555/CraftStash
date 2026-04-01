@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
@@ -7,6 +8,9 @@ struct HomeView: View {
     @State private var searchText = ""
     @State private var selectedItem: CraftItem?
     @State private var showingImportSheet = false
+    @State private var showingImagePicker = false
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
     var filteredItems: [CraftItem] {
         if searchText.isEmpty {
@@ -27,12 +31,28 @@ struct HomeView: View {
                     itemsGridView
                 }
             }
-            .navigationTitle("CraftStash ✂️")
+            .navigationTitle("CraftStash")
+            .safeAreaInset(edge: .top) {
+                if items.isEmpty {
+                    EmptyView()
+                } else if !hasSeenWelcome {
+                    welcomeBanner
+                }
+            }
             .searchable(text: $searchText, prompt: "Zoek knutselideeën...")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingImportSheet = true
+                    Menu {
+                        Button {
+                            showingImportSheet = true
+                        } label: {
+                            Label("Link toevoegen", systemImage: "link.badge.plus")
+                        }
+                        Button {
+                            showingImagePicker = true
+                        } label: {
+                            Label("Screenshot opslaan", systemImage: "photo.on.rectangle.angled")
+                        }
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
@@ -45,9 +65,41 @@ struct HomeView: View {
             .sheet(isPresented: $showingImportSheet) {
                 AddItemManuallySheet()
             }
+            .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotos, maxSelectionCount: 10, matching: .images)
+            .onChange(of: selectedPhotos) { _, newItems in
+                importPhotos(newItems)
+            }
             .onAppear {
                 importPendingSharedItems()
             }
+        }
+    }
+
+    private var welcomeBanner: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.title3)
+                    .foregroundStyle(.yellow)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tip: Zo bewaar je ideeën")
+                        .font(.subheadline.bold())
+                    Text("Zie je een leuk knutselfilmpje? Tik op de deel-knop en kies CraftStash!")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button {
+                    withAnimation { hasSeenWelcome = true }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal)
         }
     }
 
@@ -134,14 +186,45 @@ struct HomeView: View {
         Array(items.prefix(6))
     }
 
+    private func importPhotos(_ photos: [PhotosPickerItem]) {
+        Task {
+            for photo in photos {
+                if let data = try? await photo.loadTransferable(type: Data.self) {
+                    let fileName = "\(UUID().uuidString).jpg"
+                    let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                    let imageDir = docsURL.appendingPathComponent("SavedImages", isDirectory: true)
+                    try? FileManager.default.createDirectory(at: imageDir, withIntermediateDirectories: true)
+                    let fileURL = imageDir.appendingPathComponent(fileName)
+                    try? data.write(to: fileURL)
+
+                    let item = CraftItem(
+                        title: "Screenshot knutselidee",
+                        urlString: fileURL.absoluteString,
+                        thumbnailURLString: fileURL.absoluteString,
+                        sourcePlatform: "Screenshot"
+                    )
+                    await MainActor.run {
+                        modelContext.insert(item)
+                    }
+                }
+            }
+            await MainActor.run {
+                selectedPhotos = []
+                try? modelContext.save()
+            }
+        }
+    }
+
     private func importPendingSharedItems() {
         let pending = SharedDataManager.loadPendingItems()
         guard !pending.isEmpty else { return }
 
         for shared in pending {
+            let thumbnailURL = Self.generateThumbnailURL(for: shared.urlString)
             let item = CraftItem(
                 title: shared.title ?? "Knutselidee",
                 urlString: shared.urlString,
+                thumbnailURLString: thumbnailURL,
                 sourcePlatform: shared.sourcePlatform
             )
             modelContext.insert(item)
@@ -149,6 +232,35 @@ struct HomeView: View {
 
         SharedDataManager.clearPendingItems()
         try? modelContext.save()
+    }
+
+    static func generateThumbnailURL(for urlString: String) -> String? {
+        let lowered = urlString.lowercased()
+
+        // YouTube thumbnail
+        if lowered.contains("youtube.com/watch") {
+            if let url = URL(string: urlString),
+               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let videoID = components.queryItems?.first(where: { $0.name == "v" })?.value {
+                return "https://img.youtube.com/vi/\(videoID)/hqdefault.jpg"
+            }
+        }
+        if lowered.contains("youtu.be/") {
+            if let url = URL(string: urlString) {
+                let videoID = url.lastPathComponent
+                return "https://img.youtube.com/vi/\(videoID)/hqdefault.jpg"
+            }
+        }
+        if lowered.contains("youtube.com/shorts/") {
+            if let url = URL(string: urlString) {
+                let parts = url.pathComponents
+                if let idx = parts.firstIndex(of: "shorts"), idx + 1 < parts.count {
+                    return "https://img.youtube.com/vi/\(parts[idx + 1])/hqdefault.jpg"
+                }
+            }
+        }
+
+        return nil
     }
 }
 

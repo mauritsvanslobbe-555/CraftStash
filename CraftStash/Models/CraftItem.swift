@@ -36,6 +36,8 @@ final class CraftItem {
             return "music.note"
         case let p where p.contains("facebook"):
             return "person.2.fill"
+        case let p where p.contains("screenshot"):
+            return "camera.viewfinder"
         default:
             return "link"
         }
