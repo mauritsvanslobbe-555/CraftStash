@@ -21,10 +21,6 @@ workflows:
         script: |
           brew install xcodegen
 
-      - name: Install iOS 26 Simulator
-        script: |
-          xcodebuild -downloadPlatform iOS
-
       - name: Generate Xcode project
         script: |
           cd $CM_BUILD_DIR
