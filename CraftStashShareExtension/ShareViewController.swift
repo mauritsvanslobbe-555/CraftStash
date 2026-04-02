@@ -208,10 +208,11 @@ class ShareViewController: UIViewController {
                 // Try URL
                 if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.url.identifier) { [weak self] data, _ in
+                        let urlString = (data as? URL)?.absoluteString
                         DispatchQueue.main.async {
-                            if let url = data as? URL {
-                                self?.sharedURL = url.absoluteString
-                                let platform = self?.detectPlatform(from: url.absoluteString) ?? "Link"
+                            if let urlString {
+                                self?.sharedURL = urlString
+                                let platform = self?.detectPlatform(from: urlString) ?? "Link"
                                 self?.subtitleLabel.text = "\(platform) link gevonden"
                             }
                             if let title = self?.sharedTitle {
@@ -226,8 +227,9 @@ class ShareViewController: UIViewController {
                 // Try plain text (some apps share URLs as text)
                 if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier) { [weak self] data, _ in
+                        let text = data as? String
                         DispatchQueue.main.async {
-                            if let text = data as? String, text.hasPrefix("http") {
+                            if let text, text.hasPrefix("http") {
                                 self?.sharedURL = text
                                 let platform = self?.detectPlatform(from: text) ?? "Link"
                                 self?.subtitleLabel.text = "\(platform) link gevonden"
