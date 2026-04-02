@@ -14,12 +14,16 @@ workflows:
           - craftstash_share_extension_appstore
       vars:
         XCODE_SCHEME: "CraftStash"
-      xcode: 16.2
+      xcode: 26.0
 
     scripts:
       - name: Install XcodeGen
         script: |
           brew install xcodegen
+
+      - name: Install iOS 26 Simulator
+        script: |
+          xcodebuild -downloadPlatform iOS
 
       - name: Generate Xcode project
         script: |
@@ -69,7 +73,7 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      xcode: 16.2
+      xcode: 26.0
 
     scripts:
       - name: Install XcodeGen
