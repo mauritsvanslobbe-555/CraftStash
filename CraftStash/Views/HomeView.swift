@@ -172,48 +172,157 @@ struct HomeView: View {
         )
     }
 
-    // MARK: - Empty State
+    // MARK: - Onboarding (shown until first item is saved)
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            // Hero card
-            VStack(spacing: 12) {
-                Text("✨")
-                    .font(.system(size: 40))
-                Text("Bewaar alles.\nVind alles terug.")
-                    .font(.title3.bold())
+        ScrollView {
+            VStack(spacing: 20) {
+                // Hero
+                VStack(spacing: 8) {
+                    Text("✨")
+                        .font(.system(size: 40))
+                    Text("Welkom bij CraftStash!")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                    Text("Bewaar al je knutselideeën\nop één plek.")
+                        .font(.callout)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(28)
+                .frame(maxWidth: .infinity)
+                .background(Theme.accentGradient)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal)
+
+                // Steps
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("ZO WERKT HET")
+                        .font(.caption.bold())
+                        .foregroundStyle(Theme.textSecondary)
+                        .tracking(0.5)
+                        .padding(.horizontal)
+
+                    onboardingStep(
+                        num: "1",
+                        icon: "square.and.arrow.up",
+                        title: "Zie een leuk knutselidee",
+                        desc: "Op YouTube, Instagram, TikTok, Pinterest of waar dan ook."
+                    )
+                    onboardingStep(
+                        num: "2",
+                        icon: "arrowshape.turn.up.right.fill",
+                        title: "Tik op de deel-knop",
+                        desc: "Kies 'CraftStash' in het deelmenu. Je kunt ook screenshots of foto's delen!"
+                    )
+                    onboardingStep(
+                        num: "3",
+                        icon: "checkmark.circle.fill",
+                        title: "Opgeslagen!",
+                        desc: "Je knutselidee staat veilig in CraftStash. Organiseer het in mappen en bekijk het wanneer je wilt."
+                    )
+                }
+
+                // Supported platforms
+                VStack(spacing: 12) {
+                    Text("WERKT MET")
+                        .font(.caption.bold())
+                        .foregroundStyle(Theme.textSecondary)
+                        .tracking(0.5)
+
+                    HStack(spacing: 20) {
+                        PlatformBadge(name: "YouTube", color: .red)
+                        PlatformBadge(name: "Instagram", color: .purple)
+                        PlatformBadge(name: "TikTok", color: Theme.color(for: "sky"))
+                        PlatformBadge(name: "Pinterest", color: Theme.color(for: "berry"))
+                    }
+
+                    Text("En alle andere apps met een deel-knop!")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textTertiary)
+                }
+                .padding(.vertical, 8)
+
+                // CTA buttons
+                VStack(spacing: 12) {
+                    Button {
+                        showingImportSheet = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "link.badge.plus")
+                            Text("Link toevoegen")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Theme.accentGradient)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    Button {
+                        showingImagePicker = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "photo.on.rectangle.angled")
+                            Text("Screenshot opslaan")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Theme.surface2)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Theme.borderColor, lineWidth: 1)
+                        )
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer(minLength: 32)
+            }
+            .padding(.top, 8)
+        }
+    }
+
+    private func onboardingStep(num: String, icon: String, title: String, desc: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Theme.primaryColor.opacity(0.15))
+                    .frame(width: 48, height: 48)
+                Image(systemName: icon)
+                    .foregroundStyle(Theme.primaryColor)
+            }
+            .overlay(alignment: .topTrailing) {
+                Text(num)
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                Text("CraftStash is jouw persoonlijke bibliotheek voor knutselideeën van al je favoriete platformen.")
+                    .frame(width: 18, height: 18)
+                    .background(Theme.primaryColor)
+                    .clipShape(Circle())
+                    .offset(x: 4, y: -4)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                Text(desc)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .multilineTextAlignment(.center)
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity)
-            .background(Theme.accentGradient)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .padding(.horizontal)
-
-            // Platform badges
-            HStack(spacing: 16) {
-                PlatformBadge(name: "YouTube", color: .red)
-                PlatformBadge(name: "Pinterest", color: Theme.color(for: "berry"))
-                PlatformBadge(name: "Instagram", color: .purple)
-                PlatformBadge(name: "TikTok", color: Theme.color(for: "sky"))
-            }
-
-            Button {
-                showingImportSheet = true
-            } label: {
-                Text("Eerste idee opslaan")
-                    .font(.headline)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 14)
-                    .background(Theme.accentGradient)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(14)
+        .background(Theme.surface1)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm)
+                .stroke(Theme.borderColor, lineWidth: 1)
+        )
+        .padding(.horizontal)
     }
 
     // MARK: - Import Functions
