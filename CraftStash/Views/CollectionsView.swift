@@ -115,25 +115,34 @@ struct CollectionCard: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Background with color gradient
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Theme.color(for: collection.colorName).opacity(0.8),
-                            Theme.color(for: collection.colorName).opacity(0.3)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Background: thumbnail image or color gradient
+            if let thumbnailURL = collection.thumbnailURL,
+               let data = try? Data(contentsOf: thumbnailURL),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 160)
+            } else {
+                RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Theme.color(for: collection.colorName).opacity(0.8),
+                                Theme.color(for: collection.colorName).opacity(0.3)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .frame(height: 160)
+                    .frame(height: 160)
 
-            // Icon
-            Image(systemName: collection.icon)
-                .font(.system(size: 36))
-                .foregroundStyle(.white.opacity(0.3))
-                .offset(x: 40, y: -40)
+                // Icon only when no thumbnail
+                Image(systemName: collection.icon)
+                    .font(.system(size: 36))
+                    .foregroundStyle(.white.opacity(0.3))
+                    .offset(x: 40, y: -40)
+            }
 
             // Bottom gradient
             VStack {

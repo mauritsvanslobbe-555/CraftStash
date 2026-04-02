@@ -119,7 +119,7 @@ struct HomeView: View {
 
                 // Filter chips
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         ForEach(filters, id: \.self) { filter in
                             FilterChip(label: filter, isActive: activeFilter == filter) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -129,6 +129,7 @@ struct HomeView: View {
                         }
                     }
                     .padding(.horizontal)
+                    .padding(.vertical, 4)
                 }
                 .padding(.bottom, 12)
 
@@ -359,6 +360,9 @@ struct HomeView: View {
         let pending = SharedDataManager.loadPendingItems()
         guard !pending.isEmpty else { return }
 
+        // Collect items that need background thumbnail fetching
+        var itemsNeedingThumbnails: [(CraftItem, String)] = []
+
         for shared in pending {
             var thumbnailURL: String? = Self.generateThumbnailURL(for: shared.urlString)
 
@@ -380,10 +384,31 @@ struct HomeView: View {
                 sourcePlatform: shared.sourcePlatform
             )
             modelContext.insert(item)
+
+            // Queue items without a thumbnail for background fetching
+            if thumbnailURL == nil {
+                itemsNeedingThumbnails.append((item, shared.urlString))
+            }
         }
 
         SharedDataManager.clearPendingItems()
         try? modelContext.save()
+
+        // Fetch thumbnails in the background for items that don't have one yet
+        if !itemsNeedingThumbnails.isEmpty {
+            Task {
+                for (item, urlString) in itemsNeedingThumbnails {
+                    if let metadata = await LinkMetadataService.shared.fetchAndSaveThumbnail(for: urlString) {
+                        await MainActor.run {
+                            if let localPath = metadata.localImagePath {
+                                item.thumbnailURLString = localPath
+                                try? item.modelContext?.save()
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     static func generateThumbnailURL(for urlString: String) -> String? {
@@ -455,12 +480,16 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.caption.weight(.medium))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
                 .background(isActive ? Theme.primaryColor : Theme.surface2)
                 .foregroundStyle(isActive ? .white : Theme.textSecondary)
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(isActive ? Theme.primaryColor : Theme.borderColor, lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
     }

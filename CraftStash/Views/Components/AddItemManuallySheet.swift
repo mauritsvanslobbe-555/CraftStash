@@ -78,16 +78,34 @@ struct AddItemManuallySheet: View {
     private func saveItem() {
         let url = urlText.trimmingCharacters(in: .whitespaces)
         let platform = detectPlatformSync(from: url)
-        let thumbnailURL = HomeView.generateThumbnailURL(for: url)
+        let itemTitle = title.isEmpty ? "Knutselidee" : title
+
+        // First try YouTube thumbnail (instant, no network needed)
+        let youtubeThumbnail = HomeView.generateThumbnailURL(for: url)
+
         let item = CraftItem(
-            title: title.isEmpty ? "Knutselidee" : title,
+            title: itemTitle,
             urlString: url,
-            thumbnailURLString: thumbnailURL,
+            thumbnailURLString: youtubeThumbnail,
             sourcePlatform: platform
         )
         modelContext.insert(item)
         try? modelContext.save()
         dismiss()
+
+        // Then fetch a real thumbnail in the background for non-YouTube URLs
+        if youtubeThumbnail == nil {
+            Task {
+                if let metadata = await LinkMetadataService.shared.fetchAndSaveThumbnail(for: url) {
+                    await MainActor.run {
+                        if let localPath = metadata.localImagePath {
+                            item.thumbnailURLString = localPath
+                            try? item.modelContext?.save()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private func detectPlatformSync(from url: String) -> String {

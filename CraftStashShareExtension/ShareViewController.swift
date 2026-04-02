@@ -7,12 +7,14 @@ class ShareViewController: UIViewController {
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     private let previewImageView = UIImageView()
+    private let nameTextField = UITextField()
     private let saveButton = UIButton(type: .system)
     private let cancelButton = UIButton(type: .system)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
     private let checkmarkImageView = UIImageView()
 
     private var sharedURL: String?
+    private var sharedTitle: String?
     private var sharedImageData: Data?
     private var sharedImageFileName: String?
 
@@ -58,6 +60,19 @@ class ShareViewController: UIViewController {
         subtitleLabel.textAlignment = .center
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(subtitleLabel)
+
+        // Name text field
+        nameTextField.placeholder = "Geef een naam (optioneel)"
+        nameTextField.font = .systemFont(ofSize: 15)
+        nameTextField.borderStyle = .none
+        nameTextField.backgroundColor = UIColor.secondarySystemBackground
+        nameTextField.layer.cornerRadius = 10
+        nameTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 0))
+        nameTextField.leftViewMode = .always
+        nameTextField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 0))
+        nameTextField.rightViewMode = .always
+        nameTextField.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(nameTextField)
 
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.startAnimating()
@@ -105,15 +120,20 @@ class ShareViewController: UIViewController {
             subtitleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
             subtitleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
 
-            activityIndicator.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 16),
+            nameTextField.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
+            nameTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            nameTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            nameTextField.heightAnchor.constraint(equalToConstant: 40),
+
+            activityIndicator.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 12),
             activityIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
 
-            checkmarkImageView.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
+            checkmarkImageView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 12),
             checkmarkImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             checkmarkImageView.widthAnchor.constraint(equalToConstant: 32),
             checkmarkImageView.heightAnchor.constraint(equalToConstant: 32),
 
-            saveButton.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 20),
+            saveButton.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 16),
             saveButton.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
             saveButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
             saveButton.heightAnchor.constraint(equalToConstant: 48),
@@ -147,6 +167,11 @@ class ShareViewController: UIViewController {
         }
 
         for item in extensionItems {
+            // Extract title from the shared item (e.g. page title from browser)
+            if let attributedTitle = item.attributedContentText?.string, !attributedTitle.isEmpty {
+                sharedTitle = attributedTitle
+            }
+
             guard let attachments = item.attachments else { continue }
 
             for attachment in attachments {
@@ -171,6 +196,9 @@ class ShareViewController: UIViewController {
                                 }
                                 self?.subtitleLabel.text = "Afbeelding klaar om op te slaan"
                             }
+                            if let title = self?.sharedTitle {
+                                self?.nameTextField.text = title
+                            }
                             self?.activityIndicator.stopAnimating()
                         }
                     }
@@ -185,6 +213,9 @@ class ShareViewController: UIViewController {
                                 self?.sharedURL = url.absoluteString
                                 let platform = self?.detectPlatform(from: url.absoluteString) ?? "Link"
                                 self?.subtitleLabel.text = "\(platform) link gevonden"
+                            }
+                            if let title = self?.sharedTitle {
+                                self?.nameTextField.text = title
                             }
                             self?.activityIndicator.stopAnimating()
                         }
@@ -201,6 +232,9 @@ class ShareViewController: UIViewController {
                                 let platform = self?.detectPlatform(from: text) ?? "Link"
                                 self?.subtitleLabel.text = "\(platform) link gevonden"
                             }
+                            if let title = self?.sharedTitle {
+                                self?.nameTextField.text = title
+                            }
                             self?.activityIndicator.stopAnimating()
                         }
                     }
@@ -211,12 +245,16 @@ class ShareViewController: UIViewController {
     }
 
     @objc private func saveTapped() {
+        // Get user-entered or auto-filled title
+        let userTitle = nameTextField.text?.trimmingCharacters(in: .whitespaces)
+        let finalTitle = (userTitle?.isEmpty == false) ? userTitle : sharedTitle
+
         // Save shared image
         if let imageData = sharedImageData {
             if let fileName = SharedDataManager.saveImageToSharedContainer(imageData) {
                 let item = SharedDataManager.SharedItem(
                     urlString: "local-image://\(fileName)",
-                    title: "Knutselidee",
+                    title: finalTitle ?? "Knutselidee",
                     sourcePlatform: "Screenshot",
                     dateAdded: Date(),
                     imageFileName: fileName
@@ -236,7 +274,7 @@ class ShareViewController: UIViewController {
         let platform = detectPlatform(from: urlString)
         let item = SharedDataManager.SharedItem(
             urlString: urlString,
-            title: nil,
+            title: finalTitle,
             sourcePlatform: platform,
             dateAdded: Date(),
             imageFileName: nil

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct AddCollectionSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -7,6 +8,8 @@ struct AddCollectionSheet: View {
     @State private var name = ""
     @State private var selectedIcon = "folder.fill"
     @State private var selectedColor = "coral"
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var thumbnailImage: UIImage?
 
     private var canSave: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -22,29 +25,65 @@ struct AddCollectionSheet: View {
                         VStack(spacing: 24) {
                             // Preview card
                             ZStack {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Theme.color(for: selectedColor).opacity(0.8),
-                                                Theme.color(for: selectedColor).opacity(0.3)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
+                                if let thumbnailImage {
+                                    Image(uiImage: thumbnailImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(height: 120)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Theme.color(for: selectedColor).opacity(0.8),
+                                                    Theme.color(for: selectedColor).opacity(0.3)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
                                         )
-                                    )
-                                    .frame(height: 100)
+                                        .frame(height: 120)
 
-                                Image(systemName: selectedIcon)
-                                    .font(.system(size: 36))
-                                    .foregroundStyle(.white)
+                                    Image(systemName: selectedIcon)
+                                        .font(.system(size: 36))
+                                        .foregroundStyle(.white)
+                                }
                             }
+                            .frame(height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                             .padding(.horizontal)
                             .padding(.top)
 
                             Text(name.isEmpty ? "Naam collectie" : name)
                                 .font(.headline)
                                 .foregroundStyle(name.isEmpty ? Theme.textTertiary : .white)
+
+                            // Thumbnail picker
+                            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: thumbnailImage == nil ? "photo.badge.plus" : "photo.fill")
+                                    Text(thumbnailImage == nil ? "Kies een thumbnail" : "Thumbnail wijzigen")
+                                }
+                                .font(.subheadline.weight(.medium))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Theme.surface2)
+                                .foregroundStyle(Theme.primaryColor)
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Theme.borderColor, lineWidth: 1)
+                                )
+                            }
+                            .onChange(of: selectedPhoto) { _, newItem in
+                                Task {
+                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                       let uiImage = UIImage(data: data) {
+                                        thumbnailImage = uiImage
+                                    }
+                                }
+                            }
 
                             // Name field
                             VStack(alignment: .leading, spacing: 8) {
@@ -169,10 +208,24 @@ struct AddCollectionSheet: View {
     }
 
     private func createCollection() {
+        var savedImagePath: String?
+
+        // Save thumbnail image if selected
+        if let thumbnailImage, let data = thumbnailImage.jpegData(compressionQuality: 0.8) {
+            let fileName = "\(UUID().uuidString).jpg"
+            let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let imageDir = docsURL.appendingPathComponent("CollectionThumbnails", isDirectory: true)
+            try? FileManager.default.createDirectory(at: imageDir, withIntermediateDirectories: true)
+            let fileURL = imageDir.appendingPathComponent(fileName)
+            try? data.write(to: fileURL)
+            savedImagePath = fileURL.absoluteString
+        }
+
         let collection = CraftCollection(
             name: name.trimmingCharacters(in: .whitespaces),
             icon: selectedIcon,
-            colorName: selectedColor
+            colorName: selectedColor,
+            thumbnailImagePath: savedImagePath
         )
         modelContext.insert(collection)
         try? modelContext.save()
