@@ -8,23 +8,16 @@ struct CollectionDetailView: View {
     @State private var showingAddItems = false
 
     var body: some View {
-        Group {
+        ZStack {
+            Theme.bg.ignoresSafeArea()
+
             if let items = collection.items, !items.isEmpty {
                 ScrollView {
-                    LazyVGrid(columns: Theme.gridColumns, spacing: 12) {
-                        ForEach(items.sorted(by: { $0.dateAdded > $1.dateAdded })) { item in
-                            CraftItemCard(item: item, style: .grid)
-                                .onTapGesture { selectedItem = item }
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        collection.items?.removeAll(where: { $0.id == item.id })
-                                    } label: {
-                                        Label("Verwijder uit collectie", systemImage: "folder.badge.minus")
-                                    }
-                                }
-                        }
+                    MasonryGrid(items: items.sorted(by: { $0.dateAdded > $1.dateAdded })) { item in
+                        selectedItem = item
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.top, 12)
                 }
             } else {
                 VStack(spacing: 16) {
@@ -34,11 +27,11 @@ struct CollectionDetailView: View {
 
                     Text("Collectie is leeg")
                         .font(.title3.bold())
+                        .foregroundStyle(.white)
 
-                    Text("Voeg knutselideeën toe vanuit\nhet startscherm")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    Text("Voeg knutselideeën toe")
+                        .font(.callout)
+                        .foregroundStyle(Theme.textSecondary)
 
                     Button {
                         showingAddItems = true
@@ -47,7 +40,7 @@ struct CollectionDetailView: View {
                             .font(.headline)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
-                            .background(Theme.color(for: collection.colorName))
+                            .background(Theme.accentGradient)
                             .foregroundStyle(.white)
                             .clipShape(Capsule())
                     }
@@ -56,12 +49,15 @@ struct CollectionDetailView: View {
             }
         }
         .navigationTitle(collection.name)
+        .toolbarBackground(Theme.bg, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showingAddItems = true
                 } label: {
                     Image(systemName: "plus")
+                        .foregroundStyle(Theme.primaryColor)
                 }
             }
         }

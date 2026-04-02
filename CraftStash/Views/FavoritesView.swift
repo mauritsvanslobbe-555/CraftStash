@@ -11,14 +11,32 @@ struct FavoritesView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                Theme.bg.ignoresSafeArea()
+
                 if favorites.isEmpty {
                     emptyStateView
                 } else {
-                    favoritesGridView
+                    ScrollView {
+                        MasonryGrid(items: favorites) { item in
+                            selectedItem = item
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+                    }
                 }
             }
-            .navigationTitle("Favorieten")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("Favorieten")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                }
+            }
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(item: $selectedItem) { item in
                 CraftItemDetailView(item: item)
             }
@@ -28,34 +46,24 @@ struct FavoritesView: View {
     private var emptyStateView: some View {
         VStack(spacing: 24) {
             Image(systemName: "heart.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(Theme.color(for: "berry"))
+                .font(.system(size: 56))
+                .foregroundStyle(Theme.danger)
 
             Text("Geen favorieten")
-                .font(.title2.bold())
+                .font(.title3.bold())
+                .foregroundStyle(.white)
 
             Text("Markeer knutselideeën als favoriet\nom ze hier terug te vinden!")
-                .font(.body)
-                .foregroundStyle(.secondary)
+                .font(.callout)
+                .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .padding()
-    }
-
-    private var favoritesGridView: some View {
-        ScrollView {
-            LazyVGrid(columns: Theme.gridColumns, spacing: 12) {
-                ForEach(favorites) { item in
-                    CraftItemCard(item: item, style: .grid)
-                        .onTapGesture { selectedItem = item }
-                }
-            }
-            .padding()
-        }
     }
 }
 
 #Preview {
     FavoritesView()
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }

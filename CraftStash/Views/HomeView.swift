@@ -10,37 +10,53 @@ struct HomeView: View {
     @State private var showingImportSheet = false
     @State private var showingImagePicker = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var activeFilter = "Alles"
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
+    private let filters = ["Alles", "Video's", "Foto's", "YouTube", "Instagram", "TikTok", "Pinterest"]
+
     var filteredItems: [CraftItem] {
-        if searchText.isEmpty {
-            return items
+        var result = items
+
+        if !searchText.isEmpty {
+            result = result.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText) ||
+                $0.sourcePlatform.localizedCaseInsensitiveContains(searchText)
+            }
         }
-        return items.filter {
-            $0.title.localizedCaseInsensitiveContains(searchText) ||
-            $0.sourcePlatform.localizedCaseInsensitiveContains(searchText)
+
+        switch activeFilter {
+        case "Video's":
+            result = result.filter { $0.isVideo }
+        case "Foto's":
+            result = result.filter { !$0.isVideo }
+        case "Alles":
+            break
+        default:
+            result = result.filter { $0.sourcePlatform.localizedCaseInsensitiveContains(activeFilter) }
         }
+
+        return result
     }
 
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                Theme.bg.ignoresSafeArea()
+
                 if items.isEmpty {
                     emptyStateView
                 } else {
-                    itemsGridView
+                    mainContentView
                 }
             }
-            .navigationTitle("CraftStash")
-            .safeAreaInset(edge: .top) {
-                if items.isEmpty {
-                    EmptyView()
-                } else if !hasSeenWelcome {
-                    welcomeBanner
-                }
-            }
-            .searchable(text: $searchText, prompt: "Zoek knutselideeën...")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("CraftStash")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
@@ -56,9 +72,14 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
+                            .foregroundStyle(Theme.primaryColor)
                     }
                 }
             }
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .searchable(text: $searchText, prompt: "Zoek in je stash...")
             .sheet(item: $selectedItem) { item in
                 CraftItemDetailView(item: item)
             }
@@ -75,117 +96,127 @@ struct HomeView: View {
         }
     }
 
-    private var welcomeBanner: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.title3)
-                    .foregroundStyle(.yellow)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Tip: Zo bewaar je ideeën")
-                        .font(.subheadline.bold())
-                    Text("Zie je een leuk knutselfilmpje? Tik op de deel-knop en kies CraftStash!")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+    // MARK: - Main Content
+    private var mainContentView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Welcome banner
+                if !hasSeenWelcome {
+                    welcomeBanner
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
                 }
+
+                // Stats
+                HStack {
+                    Text("\(items.count) items opgeslagen")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+
+                // Filter chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(filters, id: \.self) { filter in
+                            FilterChip(label: filter, isActive: activeFilter == filter) {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    activeFilter = filter
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.bottom, 12)
+
+                // Masonry Grid
+                MasonryGrid(items: filteredItems) { item in
+                    selectedItem = item
+                }
+                .padding(.horizontal)
+            }
+            .padding(.top, 8)
+        }
+    }
+
+    // MARK: - Welcome Banner
+    private var welcomeBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "lightbulb.fill")
+                    .foregroundStyle(.yellow)
+                Text("Tip: Zo bewaar je ideeën")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
                 Spacer()
                 Button {
                     withAnimation { hasSeenWelcome = true }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textTertiary)
                 }
             }
-            .padding()
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal)
-        }
-    }
-
-    private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "scissors")
-                .font(.system(size: 64))
-                .foregroundStyle(Theme.color(for: "coral"))
-
-            Text("Nog geen knutselideeën!")
-                .font(.title2.bold())
-
-            Text("Deel een filmpje of plaatje vanuit\nYouTube, Pinterest, Instagram of\neen andere app naar CraftStash!")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            HStack(spacing: 16) {
-                PlatformBadge(name: "YouTube", icon: "play.rectangle.fill", color: .red)
-                PlatformBadge(name: "Pinterest", icon: "pin.fill", color: Theme.color(for: "berry"))
-                PlatformBadge(name: "Instagram", icon: "camera.fill", color: .purple)
-                PlatformBadge(name: "TikTok", icon: "music.note", color: .primary)
-            }
+            Text("Zie je een leuk knutselfilmpje of -plaatje? Tik op de deel-knop en kies CraftStash!")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
         }
         .padding()
+        .background(Theme.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Theme.borderColor, lineWidth: 1)
+        )
     }
 
-    private var itemsGridView: some View {
-        ScrollView {
-            if !recentItems.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Recent toegevoegd")
-                        .font(.headline)
-                        .padding(.horizontal)
+    // MARK: - Empty State
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            // Hero card
+            VStack(spacing: 12) {
+                Text("✨")
+                    .font(.system(size: 40))
+                Text("Bewaar alles.\nVind alles terug.")
+                    .font(.title3.bold())
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                Text("CraftStash is jouw persoonlijke bibliotheek voor knutselideeën van al je favoriete platformen.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .background(Theme.accentGradient)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal)
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: 12) {
-                            ForEach(recentItems) { item in
-                                CraftItemCard(item: item, style: .horizontal)
-                                    .onTapGesture { selectedItem = item }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    .frame(height: 180)
-                }
-                .padding(.top)
+            // Platform badges
+            HStack(spacing: 16) {
+                PlatformBadge(name: "YouTube", color: .red)
+                PlatformBadge(name: "Pinterest", color: Theme.color(for: "berry"))
+                PlatformBadge(name: "Instagram", color: .purple)
+                PlatformBadge(name: "TikTok", color: Theme.color(for: "sky"))
             }
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Alle ideeën")
+            Button {
+                showingImportSheet = true
+            } label: {
+                Text("Eerste idee opslaan")
                     .font(.headline)
-                    .padding(.horizontal)
-
-                LazyVGrid(columns: Theme.gridColumns, spacing: 12) {
-                    ForEach(filteredItems) { item in
-                        CraftItemCard(item: item, style: .grid)
-                            .onTapGesture { selectedItem = item }
-                            .contextMenu {
-                                Button {
-                                    item.isFavorite.toggle()
-                                } label: {
-                                    Label(
-                                        item.isFavorite ? "Verwijder favoriet" : "Favoriet",
-                                        systemImage: item.isFavorite ? "heart.slash" : "heart"
-                                    )
-                                }
-
-                                Button(role: .destructive) {
-                                    modelContext.delete(item)
-                                } label: {
-                                    Label("Verwijderen", systemImage: "trash")
-                                }
-                            }
-                    }
-                }
-                .padding(.horizontal)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+                    .background(Theme.accentGradient)
+                    .foregroundStyle(.white)
+                    .clipShape(Capsule())
             }
-            .padding(.top)
         }
     }
 
-    private var recentItems: [CraftItem] {
-        Array(items.prefix(6))
-    }
-
+    // MARK: - Import Functions
     private func importPhotos(_ photos: [PhotosPickerItem]) {
         Task {
             for photo in photos {
@@ -220,7 +251,19 @@ struct HomeView: View {
         guard !pending.isEmpty else { return }
 
         for shared in pending {
-            let thumbnailURL = Self.generateThumbnailURL(for: shared.urlString)
+            var thumbnailURL: String? = Self.generateThumbnailURL(for: shared.urlString)
+
+            // If shared item has an image file, copy it and use as thumbnail
+            if let imageFileName = shared.imageFileName,
+               let sharedImageURL = SharedDataManager.sharedImageURL(for: imageFileName) {
+                let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let imageDir = docsURL.appendingPathComponent("SavedImages", isDirectory: true)
+                try? FileManager.default.createDirectory(at: imageDir, withIntermediateDirectories: true)
+                let localURL = imageDir.appendingPathComponent(imageFileName)
+                try? FileManager.default.copyItem(at: sharedImageURL, to: localURL)
+                thumbnailURL = localURL.absoluteString
+            }
+
             let item = CraftItem(
                 title: shared.title ?? "Knutselidee",
                 urlString: shared.urlString,
@@ -237,7 +280,6 @@ struct HomeView: View {
     static func generateThumbnailURL(for urlString: String) -> String? {
         let lowered = urlString.lowercased()
 
-        // YouTube thumbnail
         if lowered.contains("youtube.com/watch") {
             if let url = URL(string: urlString),
                let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
@@ -264,19 +306,70 @@ struct HomeView: View {
     }
 }
 
+// MARK: - Masonry Grid
+struct MasonryGrid: View {
+    let items: [CraftItem]
+    let onItemClick: (CraftItem) -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            LazyVStack(spacing: 10) {
+                ForEach(leftColumn) { item in
+                    CraftItemCard(item: item, style: .grid)
+                        .onTapGesture { onItemClick(item) }
+                }
+            }
+            LazyVStack(spacing: 10) {
+                ForEach(rightColumn) { item in
+                    CraftItemCard(item: item, style: .grid)
+                        .onTapGesture { onItemClick(item) }
+                }
+            }
+        }
+    }
+
+    private var leftColumn: [CraftItem] {
+        items.enumerated().compactMap { $0.offset % 2 == 0 ? $0.element : nil }
+    }
+
+    private var rightColumn: [CraftItem] {
+        items.enumerated().compactMap { $0.offset % 2 == 1 ? $0.element : nil }
+    }
+}
+
+// MARK: - Filter Chip
+struct FilterChip: View {
+    let label: String
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isActive ? Theme.primaryColor : Theme.surface2)
+                .foregroundStyle(isActive ? .white : Theme.textSecondary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Platform Badge
 struct PlatformBadge: View {
     let name: String
-    let icon: String
     let color: Color
 
     var body: some View {
         VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(color)
+            Circle()
+                .fill(color)
+                .frame(width: 12, height: 12)
             Text(name)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary)
         }
     }
 }
@@ -284,4 +377,5 @@ struct PlatformBadge: View {
 #Preview {
     HomeView()
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }

@@ -1,5 +1,4 @@
 import UIKit
-import Social
 import UniformTypeIdentifiers
 
 class ShareViewController: UIViewController {
@@ -7,12 +6,15 @@ class ShareViewController: UIViewController {
     private let containerView = UIView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
+    private let previewImageView = UIImageView()
     private let saveButton = UIButton(type: .system)
     private let cancelButton = UIButton(type: .system)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
     private let checkmarkImageView = UIImageView()
 
     private var sharedURL: String?
+    private var sharedImageData: Data?
+    private var sharedImageFileName: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,8 +27,17 @@ class ShareViewController: UIViewController {
 
         containerView.backgroundColor = .systemBackground
         containerView.layer.cornerRadius = 20
+        containerView.clipsToBounds = true
         containerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(containerView)
+
+        // Preview image
+        previewImageView.contentMode = .scaleAspectFill
+        previewImageView.clipsToBounds = true
+        previewImageView.backgroundColor = UIColor(red: 1.0, green: 0.44, blue: 0.37, alpha: 0.1)
+        previewImageView.isHidden = true
+        previewImageView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(previewImageView)
 
         // App icon / scissors emoji
         let iconLabel = UILabel()
@@ -41,7 +52,7 @@ class ShareViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(titleLabel)
 
-        subtitleLabel.text = "Knutselidee wordt opgeslagen..."
+        subtitleLabel.text = "Knutselidee wordt geladen..."
         subtitleLabel.font = .systemFont(ofSize: 14)
         subtitleLabel.textColor = .secondaryLabel
         subtitleLabel.textAlignment = .center
@@ -78,6 +89,11 @@ class ShareViewController: UIViewController {
             containerView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             containerView.widthAnchor.constraint(equalToConstant: 300),
 
+            previewImageView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            previewImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            previewImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            previewImageView.heightAnchor.constraint(equalToConstant: 160),
+
             iconLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 24),
             iconLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
 
@@ -108,6 +124,21 @@ class ShareViewController: UIViewController {
         ])
     }
 
+    private var iconLabelTopWithPreview: NSLayoutConstraint?
+    private var iconLabelTopWithoutPreview: NSLayoutConstraint?
+
+    private func showPreviewImage(_ image: UIImage) {
+        previewImageView.image = image
+        previewImageView.isHidden = false
+        // Move icon below the preview
+        for constraint in containerView.constraints {
+            if constraint.firstItem as? UILabel != nil && constraint.secondItem as? UIView === containerView && constraint.firstAttribute == .top {
+                constraint.constant = 184
+                break
+            }
+        }
+    }
+
     private func extractSharedContent() {
         guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
             subtitleLabel.text = "Kon content niet laden"
@@ -119,13 +150,41 @@ class ShareViewController: UIViewController {
             guard let attachments = item.attachments else { continue }
 
             for attachment in attachments {
-                // Try URL first
+                // Try image first
+                if attachment.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                    attachment.loadItem(forTypeIdentifier: UTType.image.identifier) { [weak self] data, _ in
+                        var imageData: Data?
+
+                        if let url = data as? URL {
+                            imageData = try? Data(contentsOf: url)
+                        } else if let image = data as? UIImage {
+                            imageData = image.jpegData(compressionQuality: 0.8)
+                        } else if let rawData = data as? Data {
+                            imageData = rawData
+                        }
+
+                        DispatchQueue.main.async {
+                            if let imageData = imageData {
+                                self?.sharedImageData = imageData
+                                if let uiImage = UIImage(data: imageData) {
+                                    self?.showPreviewImage(uiImage)
+                                }
+                                self?.subtitleLabel.text = "Afbeelding klaar om op te slaan"
+                            }
+                            self?.activityIndicator.stopAnimating()
+                        }
+                    }
+                    return
+                }
+
+                // Try URL
                 if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.url.identifier) { [weak self] data, _ in
                         DispatchQueue.main.async {
                             if let url = data as? URL {
                                 self?.sharedURL = url.absoluteString
-                                self?.subtitleLabel.text = self?.detectPlatform(from: url.absoluteString) ?? "Link gevonden"
+                                let platform = self?.detectPlatform(from: url.absoluteString) ?? "Link"
+                                self?.subtitleLabel.text = "\(platform) link gevonden"
                             }
                             self?.activityIndicator.stopAnimating()
                         }
@@ -139,7 +198,8 @@ class ShareViewController: UIViewController {
                         DispatchQueue.main.async {
                             if let text = data as? String, text.hasPrefix("http") {
                                 self?.sharedURL = text
-                                self?.subtitleLabel.text = self?.detectPlatform(from: text) ?? "Link gevonden"
+                                let platform = self?.detectPlatform(from: text) ?? "Link"
+                                self?.subtitleLabel.text = "\(platform) link gevonden"
                             }
                             self?.activityIndicator.stopAnimating()
                         }
@@ -151,8 +211,25 @@ class ShareViewController: UIViewController {
     }
 
     @objc private func saveTapped() {
+        // Save shared image
+        if let imageData = sharedImageData {
+            if let fileName = SharedDataManager.saveImageToSharedContainer(imageData) {
+                let item = SharedDataManager.SharedItem(
+                    urlString: "local-image://\(fileName)",
+                    title: "Knutselidee",
+                    sourcePlatform: "Screenshot",
+                    dateAdded: Date(),
+                    imageFileName: fileName
+                )
+                SharedDataManager.savePendingItem(item)
+                showSuccess()
+            }
+            return
+        }
+
+        // Save shared URL
         guard let urlString = sharedURL else {
-            subtitleLabel.text = "Geen link gevonden"
+            subtitleLabel.text = "Geen link of afbeelding gevonden"
             return
         }
 
@@ -161,12 +238,15 @@ class ShareViewController: UIViewController {
             urlString: urlString,
             title: nil,
             sourcePlatform: platform,
-            dateAdded: Date()
+            dateAdded: Date(),
+            imageFileName: nil
         )
 
         SharedDataManager.savePendingItem(item)
+        showSuccess()
+    }
 
-        // Show success
+    private func showSuccess() {
         UIView.animate(withDuration: 0.3) {
             self.activityIndicator.isHidden = true
             self.checkmarkImageView.isHidden = false
@@ -174,7 +254,6 @@ class ShareViewController: UIViewController {
             self.saveButton.isHidden = true
         }
 
-        // Auto-dismiss after short delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             self.extensionContext?.completeRequest(returningItems: nil)
         }

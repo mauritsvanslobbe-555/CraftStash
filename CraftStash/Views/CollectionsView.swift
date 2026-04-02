@@ -8,24 +8,43 @@ struct CollectionsView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                Theme.bg.ignoresSafeArea()
+
                 if collections.isEmpty {
                     emptyStateView
                 } else {
                     collectionsListView
                 }
             }
-            .navigationTitle("Collecties")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("Collecties")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingAddSheet = true
                     } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.caption.bold())
+                            Text("Nieuw")
+                                .font(.caption.bold())
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Theme.primaryColor)
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
                     }
                 }
             }
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $showingAddSheet) {
                 AddCollectionSheet()
             }
@@ -35,15 +54,16 @@ struct CollectionsView: View {
     private var emptyStateView: some View {
         VStack(spacing: 24) {
             Image(systemName: "folder.fill.badge.plus")
-                .font(.system(size: 64))
-                .foregroundStyle(Theme.color(for: "ocean"))
+                .font(.system(size: 56))
+                .foregroundStyle(Theme.primaryColor)
 
             Text("Maak je eerste collectie!")
-                .font(.title2.bold())
+                .font(.title3.bold())
+                .foregroundStyle(.white)
 
             Text("Organiseer je knutselideeën in\ngroepen zoals 'Kerst', 'Verjaardag'\nof 'Makkelijk'")
-                .font(.body)
-                .foregroundStyle(.secondary)
+                .font(.callout)
+                .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
 
             Button {
@@ -53,7 +73,7 @@ struct CollectionsView: View {
                     .font(.headline)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(Theme.color(for: "ocean"))
+                    .background(Theme.accentGradient)
                     .foregroundStyle(.white)
                     .clipShape(Capsule())
             }
@@ -63,21 +83,29 @@ struct CollectionsView: View {
 
     private var collectionsListView: some View {
         ScrollView {
-            LazyVGrid(columns: Theme.gridColumns, spacing: 16) {
-                ForEach(collections) { collection in
-                    NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                        CollectionCard(collection: collection)
-                    }
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            modelContext.delete(collection)
-                        } label: {
-                            Label("Verwijderen", systemImage: "trash")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(collections.count) collecties")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.horizontal)
+
+                LazyVGrid(columns: Theme.gridColumns, spacing: 12) {
+                    ForEach(collections) { collection in
+                        NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                            CollectionCard(collection: collection)
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                modelContext.delete(collection)
+                            } label: {
+                                Label("Verwijderen", systemImage: "trash")
+                            }
                         }
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding()
+            .padding(.top, 12)
         }
     }
 }
@@ -86,37 +114,71 @@ struct CollectionCard: View {
     let collection: CraftCollection
 
     var body: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                    .fill(Theme.color(for: collection.colorName).gradient)
-                    .frame(height: 120)
+        ZStack(alignment: .bottom) {
+            // Background with color gradient
+            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Theme.color(for: collection.colorName).opacity(0.8),
+                            Theme.color(for: collection.colorName).opacity(0.3)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(height: 160)
 
-                Image(systemName: collection.icon)
-                    .font(.system(size: 40))
-                    .foregroundStyle(.white)
+            // Icon
+            Image(systemName: collection.icon)
+                .font(.system(size: 36))
+                .foregroundStyle(.white.opacity(0.3))
+                .offset(x: 40, y: -40)
+
+            // Bottom gradient
+            VStack {
+                Spacer()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(collection.name)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    HStack(spacing: 6) {
+                        Text("\(collection.itemCount) items")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                        Circle()
+                            .fill(Theme.color(for: collection.colorName))
+                            .frame(width: 4, height: 4)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.6)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
             }
 
-            VStack(spacing: 4) {
-                Text(collection.name)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-
-                Text("\(collection.itemCount) ideeën")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            // Color accent line at bottom
+            VStack {
+                Spacer()
+                Rectangle()
+                    .fill(Theme.color(for: collection.colorName))
+                    .frame(height: 3)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.08), radius: Theme.cardShadowRadius, y: 2)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
+        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
     }
 }
 
 #Preview {
     CollectionsView()
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }

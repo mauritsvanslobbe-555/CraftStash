@@ -11,180 +11,198 @@ struct CraftItemDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Thumbnail / Preview
-                    ZStack {
-                        RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                            .fill(Color(.secondarySystemBackground))
-                            .frame(height: 240)
+            ZStack {
+                Theme.bg.ignoresSafeArea()
 
-                        if let thumbnailURL = item.thumbnailURL, thumbnailURL.isFileURL {
-                            if let data = try? Data(contentsOf: thumbnailURL),
-                               let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 240)
-                                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
-                            }
-                        } else if let thumbnailURL = item.thumbnailURL {
-                            AsyncImage(url: thumbnailURL) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 240)
-                                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
-                            } placeholder: {
-                                ProgressView()
-                            }
-                        } else {
-                            VStack(spacing: 8) {
-                                Image(systemName: item.isVideo ? "play.circle.fill" : "photo.fill")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(Theme.color(for: "coral"))
-                                Text(item.sourcePlatform)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Thumbnail / Preview
+                        ZStack {
+                            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
+                                .fill(Theme.surface2)
+                                .frame(height: 240)
 
-                        if item.isVideo {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 56))
-                                .foregroundStyle(.white)
-                                .shadow(radius: 4)
-                        }
-                    }
-                    .onTapGesture {
-                        if let url = item.url {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-
-                    // Info
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(item.title)
-                            .font(.title2.bold())
-
-                        HStack {
-                            Label(item.sourcePlatform, systemImage: item.platformIcon)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-
-                            Spacer()
-
-                            Text(item.dateAdded, style: .date)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Divider()
-
-                        // Actions
-                        HStack(spacing: 24) {
-                            actionButton(
-                                icon: item.isFavorite ? "heart.fill" : "heart",
-                                label: "Favoriet",
-                                color: Theme.color(for: "berry"),
-                                isActive: item.isFavorite
-                            ) {
-                                item.isFavorite.toggle()
-                            }
-
-                            actionButton(
-                                icon: "folder.badge.plus",
-                                label: "Collectie",
-                                color: Theme.color(for: "ocean")
-                            ) {
-                                showingCollectionPicker = true
-                            }
-
-                            actionButton(
-                                icon: "square.and.arrow.up",
-                                label: "Deel",
-                                color: Theme.color(for: "forest")
-                            ) {
-                                shareItem()
-                            }
-
-                            if let url = item.url {
-                                Link(destination: url) {
-                                    VStack(spacing: 4) {
-                                        Image(systemName: "arrow.up.right.square")
-                                            .font(.title3)
-                                            .foregroundStyle(Theme.color(for: "lavender"))
-                                        Text("Open")
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
+                            if let thumbnailURL = item.thumbnailURL, thumbnailURL.isFileURL {
+                                if let data = try? Data(contentsOf: thumbnailURL),
+                                   let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(height: 240)
+                                        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
                                 }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-
-                        Divider()
-
-                        // Notes
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Notities")
-                                    .font(.headline)
-                                Spacer()
-                                Button(isEditingNotes ? "Klaar" : "Bewerk") {
-                                    isEditingNotes.toggle()
+                            } else if let thumbnailURL = item.thumbnailURL {
+                                AsyncImage(url: thumbnailURL) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(height: 240)
+                                        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
+                                } placeholder: {
+                                    ProgressView()
+                                        .tint(.white)
                                 }
-                                .font(.subheadline)
-                            }
-
-                            if isEditingNotes {
-                                TextField("Voeg notities toe...", text: Binding(
-                                    get: { item.notes ?? "" },
-                                    set: { item.notes = $0.isEmpty ? nil : $0 }
-                                ), axis: .vertical)
-                                .textFieldStyle(.roundedBorder)
-                                .lineLimit(3...6)
                             } else {
-                                Text(item.notes ?? "Geen notities")
-                                    .font(.body)
-                                    .foregroundStyle(item.notes == nil ? .tertiary : .primary)
+                                VStack(spacing: 8) {
+                                    Image(systemName: item.isVideo ? "play.circle.fill" : "photo.fill")
+                                        .font(.system(size: 48))
+                                        .foregroundStyle(Theme.primaryColor)
+                                    Text(item.sourcePlatform)
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.textSecondary)
+                                }
+                            }
+
+                            if item.isVideo {
+                                Image(systemName: "play.circle.fill")
+                                    .font(.system(size: 56))
+                                    .foregroundStyle(.white)
+                                    .shadow(radius: 4)
+                            }
+                        }
+                        .onTapGesture {
+                            if let url = item.url, !url.isFileURL {
+                                UIApplication.shared.open(url)
                             }
                         }
 
-                        // Collections this item belongs to
-                        if let itemCollections = item.collections, !itemCollections.isEmpty {
-                            Divider()
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("In collecties")
-                                    .font(.headline)
-                                FlowLayout(spacing: 8) {
-                                    ForEach(itemCollections) { collection in
-                                        HStack(spacing: 4) {
-                                            Image(systemName: collection.icon)
-                                            Text(collection.name)
+                        // Info
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(item.title)
+                                .font(.title2.bold())
+                                .foregroundStyle(.white)
+
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(Theme.platformColor(for: item.sourcePlatform))
+                                        .frame(width: 8, height: 8)
+                                    Text(item.sourcePlatform)
+                                        .font(.subheadline)
+                                        .foregroundStyle(Theme.textSecondary)
+                                }
+
+                                Spacer()
+
+                                Text(item.dateAdded, style: .date)
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.textTertiary)
+                            }
+
+                            Divider().overlay(Theme.borderColor)
+
+                            // Actions
+                            HStack(spacing: 24) {
+                                actionButton(
+                                    icon: item.isFavorite ? "heart.fill" : "heart",
+                                    label: "Favoriet",
+                                    color: Theme.danger,
+                                    isActive: item.isFavorite
+                                ) {
+                                    item.isFavorite.toggle()
+                                }
+
+                                actionButton(
+                                    icon: "folder.badge.plus",
+                                    label: "Collectie",
+                                    color: Theme.primaryColor
+                                ) {
+                                    showingCollectionPicker = true
+                                }
+
+                                actionButton(
+                                    icon: "square.and.arrow.up",
+                                    label: "Deel",
+                                    color: Theme.success
+                                ) {
+                                    shareItem()
+                                }
+
+                                if let url = item.url, !url.isFileURL {
+                                    Link(destination: url) {
+                                        VStack(spacing: 4) {
+                                            Image(systemName: "arrow.up.right.square")
+                                                .font(.title3)
+                                                .foregroundStyle(Theme.accentLight)
+                                            Text("Open")
+                                                .font(.caption2)
+                                                .foregroundStyle(Theme.textSecondary)
                                         }
-                                        .font(.caption)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(Theme.color(for: collection.colorName).opacity(0.15))
-                                        .foregroundStyle(Theme.color(for: collection.colorName))
-                                        .clipShape(Capsule())
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            Divider().overlay(Theme.borderColor)
+
+                            // Notes
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Notities")
+                                        .font(.headline)
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    Button(isEditingNotes ? "Klaar" : "Bewerk") {
+                                        isEditingNotes.toggle()
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundStyle(Theme.primaryColor)
+                                }
+
+                                if isEditingNotes {
+                                    TextField("Voeg notities toe...", text: Binding(
+                                        get: { item.notes ?? "" },
+                                        set: { item.notes = $0.isEmpty ? nil : $0 }
+                                    ), axis: .vertical)
+                                    .padding(12)
+                                    .background(Theme.surface2)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(3...6)
+                                } else {
+                                    Text(item.notes ?? "Geen notities")
+                                        .font(.body)
+                                        .foregroundStyle(item.notes == nil ? Theme.textTertiary : .white)
+                                }
+                            }
+
+                            // Collections
+                            if let itemCollections = item.collections, !itemCollections.isEmpty {
+                                Divider().overlay(Theme.borderColor)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("In collecties")
+                                        .font(.headline)
+                                        .foregroundStyle(.white)
+                                    FlowLayout(spacing: 8) {
+                                        ForEach(itemCollections) { collection in
+                                            HStack(spacing: 4) {
+                                                Image(systemName: collection.icon)
+                                                Text(collection.name)
+                                            }
+                                            .font(.caption)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(Theme.color(for: collection.colorName).opacity(0.15))
+                                            .foregroundStyle(Theme.color(for: collection.colorName))
+                                            .clipShape(Capsule())
+                                        }
                                     }
                                 }
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+                    .padding(.bottom, 32)
                 }
-                .padding(.bottom, 32)
             }
             .navigationTitle("Detail")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.textSecondary)
                     }
                 }
             }
@@ -205,10 +223,10 @@ struct CraftItemDetailView: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundStyle(isActive ? color : .secondary)
+                    .foregroundStyle(isActive ? color : Theme.textSecondary)
                 Text(label)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
         }
     }

@@ -19,68 +19,120 @@ struct CraftItemCard: View {
     }
 
     private var gridCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        ZStack(alignment: .topLeading) {
             thumbnailView
-                .frame(height: 140)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(minHeight: 160, maxHeight: 260)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.subheadline.bold())
-                    .lineLimit(2)
-                    .foregroundStyle(.primary)
+            // Platform badge top-left
+            platformBadge
+                .padding(8)
 
-                HStack {
-                    Image(systemName: item.platformIcon)
-                        .font(.caption2)
+            // Bottom gradient overlay with title
+            VStack {
+                Spacer()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.title)
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
                     Text(item.sourcePlatform)
                         .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10)
+                .background(
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.7)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
 
+            // Video play button
+            if item.isVideo {
+                VStack {
                     Spacer()
-
-                    if item.isFavorite {
-                        Image(systemName: "heart.fill")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.color(for: "berry"))
+                    HStack {
+                        Spacer()
+                        Image(systemName: "play.fill")
+                            .font(.caption)
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .padding(8)
                     }
                 }
-                .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 4)
+
+            // Favorite indicator
+            if item.isFavorite {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "heart.fill")
+                            .font(.caption)
+                            .foregroundStyle(Theme.danger)
+                            .padding(6)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(8)
+            }
         }
-        .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.08), radius: Theme.cardShadowRadius, y: 2)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
     }
 
     private var horizontalCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        ZStack(alignment: .bottomLeading) {
             thumbnailView
-                .frame(width: 200, height: 120)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(width: 200, height: 140)
 
-            Text(item.title)
-                .font(.caption.bold())
-                .lineLimit(2)
-                .foregroundStyle(.primary)
-                .frame(width: 200, alignment: .leading)
+            platformBadge
+                .padding(8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            HStack(spacing: 4) {
-                Image(systemName: item.platformIcon)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
                 Text(item.sourcePlatform)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.6))
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.7)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
         }
-        .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.08), radius: Theme.cardShadowRadius, y: 2)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+    }
+
+    private var platformBadge: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(Theme.platformColor(for: item.sourcePlatform))
+                .frame(width: 6, height: 6)
+            Text(item.sourcePlatform)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(.black.opacity(0.6))
+        .background(.ultraThinMaterial)
+        .clipShape(Capsule())
     }
 
     private var thumbnailView: some View {
@@ -90,7 +142,6 @@ struct CraftItemCard: View {
 
             if let thumbnailURL = item.thumbnailURL {
                 if thumbnailURL.isFileURL {
-                    // Local image (screenshot)
                     if let data = try? Data(contentsOf: thumbnailURL),
                        let uiImage = UIImage(data: data) {
                         Image(uiImage: uiImage)
@@ -110,38 +161,24 @@ struct CraftItemCard: View {
                             placeholderIcon
                         default:
                             ProgressView()
+                                .tint(.white)
                         }
                     }
                 }
             } else {
                 placeholderIcon
             }
-
-            if item.isVideo {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Image(systemName: "play.fill")
-                            .font(.caption)
-                            .padding(6)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .padding(8)
-                    }
-                }
-            }
         }
     }
 
     private var placeholderIcon: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             Image(systemName: item.isVideo ? "play.rectangle.fill" : "photo.fill")
                 .font(.title2)
                 .foregroundStyle(.white.opacity(0.8))
             Text(item.sourcePlatform)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.white.opacity(0.5))
         }
     }
 
@@ -149,17 +186,17 @@ struct CraftItemCard: View {
         let colors: [Color]
         switch item.sourcePlatform.lowercased() {
         case "youtube":
-            colors = [Color.red, Color.red.opacity(0.7)]
+            colors = [Color.red.opacity(0.8), Color.red.opacity(0.4)]
         case "pinterest":
-            colors = [Theme.color(for: "berry"), Theme.color(for: "coral")]
+            colors = [Theme.color(for: "berry").opacity(0.8), Theme.color(for: "coral").opacity(0.4)]
         case "instagram":
-            colors = [.purple, .pink, .orange]
+            colors = [.purple.opacity(0.8), .pink.opacity(0.4), .orange.opacity(0.4)]
         case "tiktok":
-            colors = [.black, Color(red: 0.0, green: 0.96, blue: 0.88)]
+            colors = [.black, Color(red: 0.0, green: 0.96, blue: 0.88).opacity(0.4)]
         case "screenshot":
-            colors = [Theme.color(for: "forest"), Theme.color(for: "mint")]
+            colors = [Theme.color(for: "forest").opacity(0.8), Theme.color(for: "mint").opacity(0.4)]
         default:
-            colors = [Theme.color(for: "ocean"), Theme.color(for: "sky")]
+            colors = [Theme.primaryColor.opacity(0.8), Theme.primaryColor.opacity(0.3)]
         }
         return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
