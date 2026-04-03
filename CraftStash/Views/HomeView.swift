@@ -396,13 +396,17 @@ struct HomeView: View {
 
         // Fetch thumbnails in the background for items that don't have one yet
         if !itemsNeedingThumbnails.isEmpty {
+            let thumbnailRequests = itemsNeedingThumbnails.map { (item, urlString) in
+                (item.persistentModelID, urlString)
+            }
             Task {
-                for (item, urlString) in itemsNeedingThumbnails {
+                for (itemID, urlString) in thumbnailRequests {
                     if let metadata = await LinkMetadataService.shared.fetchAndSaveThumbnail(for: urlString) {
-                        await MainActor.run {
+                        await MainActor.run { [itemID] in
                             if let localPath = metadata.localImagePath {
-                                item.thumbnailURLString = localPath
-                                try? item.modelContext?.save()
+                                let fetchedItem = modelContext.model(for: itemID) as? CraftItem
+                                fetchedItem?.thumbnailURLString = localPath
+                                try? modelContext.save()
                             }
                         }
                     }

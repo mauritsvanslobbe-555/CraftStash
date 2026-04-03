@@ -95,12 +95,14 @@ struct AddItemManuallySheet: View {
 
         // Then fetch a real thumbnail in the background for non-YouTube URLs
         if youtubeThumbnail == nil {
+            let itemID = item.persistentModelID
             Task {
                 if let metadata = await LinkMetadataService.shared.fetchAndSaveThumbnail(for: url) {
-                    await MainActor.run {
+                    await MainActor.run { [itemID] in
                         if let localPath = metadata.localImagePath {
-                            item.thumbnailURLString = localPath
-                            try? item.modelContext?.save()
+                            let fetchedItem = modelContext.model(for: itemID) as? CraftItem
+                            fetchedItem?.thumbnailURLString = localPath
+                            try? modelContext.save()
                         }
                     }
                 }
