@@ -9,7 +9,6 @@ workflows:
 
     environment:
       ios_signing:
-        distribution_certificate: StuffStash Distribution
         provisioning_profiles:
           - craftstash_appstore_v2
           - craftstash_share_extension_appstore_v2
