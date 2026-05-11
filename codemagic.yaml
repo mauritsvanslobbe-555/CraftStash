@@ -8,12 +8,10 @@ workflows:
       app_store_connect: CodeMagic1
 
     environment:
-      ios_signing:
-        provisioning_profiles:
-          - craftstash_appstore_v2
-          - craftstash_share_extension_appstore_v2
       vars:
         XCODE_SCHEME: "CraftStash"
+        BUNDLE_ID: "com.craftstash.app"
+        EXTENSION_BUNDLE_ID: "com.craftstash.app.share-extension"
       xcode: 26.0
 
     scripts:
@@ -28,6 +26,10 @@ workflows:
 
       - name: Set up code signing
         script: |
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files $EXTENSION_BUNDLE_ID --type IOS_APP_STORE --create
+          keychain initialize
+          keychain add-certificates
           xcode-project use-profiles
 
       - name: Build IPA
