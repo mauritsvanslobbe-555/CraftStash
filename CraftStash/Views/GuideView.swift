@@ -1,28 +1,35 @@
 import SwiftUI
 
 struct GuideView: View {
+    @Environment(LanguageManager.self) private var languageManager
     @State private var expandedFaq: Int?
 
-    private let steps = [
-        GuideStep(icon: "arrow.down.circle", num: "1", title: "Content opslaan", desc: "Deel een link vanuit Instagram, TikTok, YouTube of een andere app naar CraftStash."),
-        GuideStep(icon: "square.stack.3d.up", num: "2", title: "Organiseer in collecties", desc: "Maak collecties aan voor verschillende thema's en voeg items toe."),
-        GuideStep(icon: "tag", num: "3", title: "Filter en zoek", desc: "Filter op platform, type (video/afbeelding) of zoek op titel."),
-        GuideStep(icon: "eye", num: "4", title: "Bekijk en deel", desc: "Open opgeslagen content in de app of ga terug naar het origineel."),
-    ]
+    private var steps: [GuideStep] {
+        [
+            GuideStep(icon: "arrow.down.circle", num: "1", title: L.guideStep1Title, desc: L.guideStep1Desc),
+            GuideStep(icon: "square.stack.3d.up", num: "2", title: L.guideStep2Title, desc: L.guideStep2Desc),
+            GuideStep(icon: "tag", num: "3", title: L.guideStep3Title, desc: L.guideStep3Desc),
+            GuideStep(icon: "eye", num: "4", title: L.guideStep4Title, desc: L.guideStep4Desc),
+        ]
+    }
 
-    private let features = [
-        GuideFeature(icon: "globe", title: "Multi-platform", desc: "Instagram, TikTok, YouTube, Pinterest en meer"),
-        GuideFeature(icon: "bolt.fill", title: "Bliksemsnel opslaan", desc: "Eén tap via de share sheet, klaar"),
-        GuideFeature(icon: "square.stack.3d.up.fill", title: "Slimme collecties", desc: "Organiseer zoals jij wilt met mappen"),
-        GuideFeature(icon: "magnifyingglass", title: "Krachtig zoeken", desc: "Vind alles terug op titel of platform"),
-    ]
+    private var features: [GuideFeature] {
+        [
+            GuideFeature(icon: "globe", title: L.featureMultiPlatform, desc: L.featureMultiPlatformDesc),
+            GuideFeature(icon: "bolt.fill", title: L.featureFastSave, desc: L.featureFastSaveDesc),
+            GuideFeature(icon: "square.stack.3d.up.fill", title: L.featureSmartCollections, desc: L.featureSmartCollectionsDesc),
+            GuideFeature(icon: "magnifyingglass", title: L.featurePowerfulSearch, desc: L.featurePowerfulSearchDesc),
+        ]
+    }
 
-    private let faqs = [
-        FAQ(q: "Welke platformen worden ondersteund?", a: "CraftStash werkt met Instagram, TikTok, YouTube, Pinterest, Facebook, X en meer."),
-        FAQ(q: "Hoe sla ik content op?", a: "Gebruik de 'Delen'-knop in een andere app en kies CraftStash. Je kunt ook screenshots importeren via de + knop."),
-        FAQ(q: "Kan ik screenshots opslaan?", a: "Ja! Tik op de + knop in het home scherm en kies 'Screenshot opslaan' om foto's uit je bibliotheek te importeren."),
-        FAQ(q: "Is er een limiet?", a: "Nee, je kunt onbeperkt content opslaan. Je opslag is alleen beperkt door de ruimte op je apparaat."),
-    ]
+    private var faqs: [FAQ] {
+        [
+            FAQ(q: L.faq1Q, a: L.faq1A),
+            FAQ(q: L.faq2Q, a: L.faq2A),
+            FAQ(q: L.faq3Q, a: L.faq3A),
+            FAQ(q: L.faq4Q, a: L.faq4A),
+        ]
+    }
 
     var body: some View {
         NavigationStack {
@@ -35,11 +42,11 @@ struct GuideView: View {
                         VStack(spacing: 8) {
                             Text("✨")
                                 .font(.system(size: 32))
-                            Text("Bewaar alles.\nVind alles terug.")
+                            Text(L.sloganTitle)
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .multilineTextAlignment(.center)
-                            Text("CraftStash is jouw persoonlijke bibliotheek voor knutselideeën.")
+                            Text(L.guideHero)
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.8))
                                 .multilineTextAlignment(.center)
@@ -52,7 +59,7 @@ struct GuideView: View {
 
                         // Steps
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("IN 4 STAPPEN")
+                            Text(L.inSteps)
                                 .font(.caption.bold())
                                 .foregroundStyle(Theme.textSecondary)
                                 .tracking(0.5)
@@ -100,7 +107,7 @@ struct GuideView: View {
 
                         // Features grid
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("FEATURES")
+                            Text(L.features)
                                 .font(.caption.bold())
                                 .foregroundStyle(Theme.textSecondary)
                                 .tracking(0.5)
@@ -135,7 +142,7 @@ struct GuideView: View {
 
                         // FAQ
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("VEELGESTELDE VRAGEN")
+                            Text(L.faqTitle)
                                 .font(.caption.bold())
                                 .foregroundStyle(Theme.textSecondary)
                                 .tracking(0.5)
@@ -186,7 +193,7 @@ struct GuideView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Hoe werkt het?")
+                    Text(L.guideTitle)
                         .font(.title2.bold())
                         .foregroundStyle(.white)
                 }
@@ -218,5 +225,6 @@ private struct FAQ {
 
 #Preview {
     GuideView()
+        .environment(LanguageManager.shared)
         .preferredColorScheme(.dark)
 }

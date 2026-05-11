@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct CraftStashApp: App {
     let modelContainer: ModelContainer
+    @State private var languageManager = LanguageManager.shared
 
     init() {
         let schema = Schema([CraftItem.self, CraftCollection.self])
@@ -22,6 +23,7 @@ struct CraftStashApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(languageManager)
         }
         .modelContainer(modelContainer)
     }

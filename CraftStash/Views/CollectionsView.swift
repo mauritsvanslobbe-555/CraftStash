@@ -3,8 +3,10 @@ import SwiftData
 
 struct CollectionsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(LanguageManager.self) private var languageManager
     @Query(sort: \CraftCollection.dateCreated, order: .reverse) private var collections: [CraftCollection]
     @State private var showingAddSheet = false
+    @State private var collectionToEdit: CraftCollection?
 
     var body: some View {
         NavigationStack {
@@ -20,7 +22,7 @@ struct CollectionsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Collecties")
+                    Text(L.collectionsTitle)
                         .font(.title2.bold())
                         .foregroundStyle(.white)
                 }
@@ -31,7 +33,7 @@ struct CollectionsView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "plus")
                                 .font(.caption.bold())
-                            Text("Nieuw")
+                            Text(L.newItem)
                                 .font(.caption.bold())
                         }
                         .padding(.horizontal, 12)
@@ -48,6 +50,9 @@ struct CollectionsView: View {
             .sheet(isPresented: $showingAddSheet) {
                 AddCollectionSheet()
             }
+            .sheet(item: $collectionToEdit) { collection in
+                EditCollectionSheet(collection: collection)
+            }
         }
     }
 
@@ -57,11 +62,11 @@ struct CollectionsView: View {
                 .font(.system(size: 56))
                 .foregroundStyle(Theme.primaryColor)
 
-            Text("Maak je eerste collectie!")
+            Text(L.createFirstCollection)
                 .font(.title3.bold())
                 .foregroundStyle(.white)
 
-            Text("Organiseer je knutselideeën in\ngroepen zoals 'Kerst', 'Verjaardag'\nof 'Makkelijk'")
+            Text(L.organizeIdeas)
                 .font(.callout)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -69,7 +74,7 @@ struct CollectionsView: View {
             Button {
                 showingAddSheet = true
             } label: {
-                Label("Nieuwe collectie", systemImage: "plus")
+                Label(L.newCollection, systemImage: "plus")
                     .font(.headline)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
@@ -84,7 +89,7 @@ struct CollectionsView: View {
     private var collectionsListView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("\(collections.count) collecties")
+                Text("\(collections.count) \(L.collectionsCount)")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
                     .padding(.horizontal)
@@ -95,10 +100,15 @@ struct CollectionsView: View {
                             CollectionCard(collection: collection)
                         }
                         .contextMenu {
+                            Button {
+                                collectionToEdit = collection
+                            } label: {
+                                Label(L.edit, systemImage: "pencil")
+                            }
                             Button(role: .destructive) {
                                 modelContext.delete(collection)
                             } label: {
-                                Label("Verwijderen", systemImage: "trash")
+                                Label(L.delete, systemImage: "trash")
                             }
                         }
                     }
@@ -115,7 +125,6 @@ struct CollectionCard: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Background: thumbnail image or color gradient
             if let thumbnailURL = collection.thumbnailURL,
                let data = try? Data(contentsOf: thumbnailURL),
                let uiImage = UIImage(data: data) {
@@ -137,14 +146,12 @@ struct CollectionCard: View {
                     )
                     .frame(height: 160)
 
-                // Icon only when no thumbnail
                 Image(systemName: collection.icon)
                     .font(.system(size: 36))
                     .foregroundStyle(.white.opacity(0.3))
                     .offset(x: 40, y: -40)
             }
 
-            // Bottom gradient
             VStack {
                 Spacer()
                 VStack(alignment: .leading, spacing: 4) {
@@ -154,7 +161,7 @@ struct CollectionCard: View {
                         .lineLimit(1)
 
                     HStack(spacing: 6) {
-                        Text("\(collection.itemCount) items")
+                        Text("\(collection.itemCount) \(L.items)")
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.7))
                         Circle()
@@ -173,7 +180,6 @@ struct CollectionCard: View {
                 )
             }
 
-            // Color accent line at bottom
             VStack {
                 Spacer()
                 Rectangle()
@@ -188,6 +194,7 @@ struct CollectionCard: View {
 
 #Preview {
     CollectionsView()
+        .environment(LanguageManager.shared)
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

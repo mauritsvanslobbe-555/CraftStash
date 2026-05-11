@@ -25,18 +25,18 @@ struct CollectionDetailView: View {
                         .font(.system(size: 48))
                         .foregroundStyle(Theme.color(for: collection.colorName))
 
-                    Text("Collectie is leeg")
+                    Text(L.collectionEmpty)
                         .font(.title3.bold())
                         .foregroundStyle(.white)
 
-                    Text("Voeg knutselideeën toe")
+                    Text(L.addIdeas)
                         .font(.callout)
                         .foregroundStyle(Theme.textSecondary)
 
                     Button {
                         showingAddItems = true
                     } label: {
-                        Label("Ideeën toevoegen", systemImage: "plus")
+                        Label(L.addIdeasButton, systemImage: "plus")
                             .font(.headline)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)

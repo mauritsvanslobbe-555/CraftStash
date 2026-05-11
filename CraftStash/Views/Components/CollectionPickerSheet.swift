@@ -13,9 +13,9 @@ struct CollectionPickerSheet: View {
             List {
                 if collections.isEmpty {
                     ContentUnavailableView {
-                        Label("Geen collecties", systemImage: "folder")
+                        Label(L.noCollections, systemImage: "folder")
                     } description: {
-                        Text("Maak eerst een collectie aan")
+                        Text(L.createCollectionFirst)
                     }
                 }
 
@@ -46,11 +46,11 @@ struct CollectionPickerSheet: View {
                     }
                 }
             }
-            .navigationTitle("Toevoegen aan collectie")
+            .navigationTitle(L.addToCollection)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Klaar") { dismiss() }
+                    Button(L.done) { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

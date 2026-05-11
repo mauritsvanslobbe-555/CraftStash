@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>CraftStash</string>
+    <string>StuffStash</string>
     <key>CFBundleName</key>
-    <string>CraftStash</string>
+    <string>StuffStash</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>

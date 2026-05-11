@@ -2,14 +2,22 @@ import SwiftUI
 import SwiftData
 import PhotosUI
 
-struct AddCollectionSheet: View {
+struct EditCollectionSheet: View {
+    @Bindable var collection: CraftCollection
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @State private var name = ""
-    @State private var selectedIcon = "folder.fill"
-    @State private var selectedColor = "coral"
+    @State private var name: String
+    @State private var selectedIcon: String
+    @State private var selectedColor: String
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var thumbnailImage: UIImage?
+
+    init(collection: CraftCollection) {
+        self.collection = collection
+        _name = State(initialValue: collection.name)
+        _selectedIcon = State(initialValue: collection.icon)
+        _selectedColor = State(initialValue: collection.colorName)
+    }
 
     private var canSave: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -27,6 +35,14 @@ struct AddCollectionSheet: View {
                             ZStack {
                                 if let thumbnailImage {
                                     Image(uiImage: thumbnailImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(height: 120)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                                } else if let thumbnailURL = collection.thumbnailURL,
+                                          let data = try? Data(contentsOf: thumbnailURL),
+                                          let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                         .frame(height: 120)
@@ -177,9 +193,9 @@ struct AddCollectionSheet: View {
                     // Fixed bottom button
                     VStack {
                         Button {
-                            createCollection()
+                            saveChanges()
                         } label: {
-                            Text(L.createButton)
+                            Text(L.saveChanges)
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -195,7 +211,7 @@ struct AddCollectionSheet: View {
                     .background(Theme.bg)
                 }
             }
-            .navigationTitle(L.newCollection)
+            .navigationTitle(L.editCollection)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -207,9 +223,7 @@ struct AddCollectionSheet: View {
         }
     }
 
-    private func createCollection() {
-        var savedImagePath: String?
-
+    private func saveChanges() {
         if let thumbnailImage, let data = thumbnailImage.jpegData(compressionQuality: 0.8) {
             let fileName = "\(UUID().uuidString).jpg"
             let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -217,23 +231,13 @@ struct AddCollectionSheet: View {
             try? FileManager.default.createDirectory(at: imageDir, withIntermediateDirectories: true)
             let fileURL = imageDir.appendingPathComponent(fileName)
             try? data.write(to: fileURL)
-            savedImagePath = fileURL.absoluteString
+            collection.thumbnailImagePath = fileURL.absoluteString
         }
 
-        let collection = CraftCollection(
-            name: name.trimmingCharacters(in: .whitespaces),
-            icon: selectedIcon,
-            colorName: selectedColor,
-            thumbnailImagePath: savedImagePath
-        )
-        modelContext.insert(collection)
+        collection.name = name.trimmingCharacters(in: .whitespaces)
+        collection.icon = selectedIcon
+        collection.colorName = selectedColor
         try? modelContext.save()
         dismiss()
     }
-}
-
-#Preview {
-    AddCollectionSheet()
-        .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
-        .preferredColorScheme(.dark)
 }

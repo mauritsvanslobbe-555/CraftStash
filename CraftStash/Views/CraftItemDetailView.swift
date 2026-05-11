@@ -8,6 +8,7 @@ struct CraftItemDetailView: View {
     @Query(sort: \CraftCollection.name) private var collections: [CraftCollection]
     @State private var showingCollectionPicker = false
     @State private var isEditingNotes = false
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -95,7 +96,7 @@ struct CraftItemDetailView: View {
                             HStack(spacing: 24) {
                                 actionButton(
                                     icon: item.isFavorite ? "heart.fill" : "heart",
-                                    label: "Favoriet",
+                                    label: L.favorite,
                                     color: Theme.danger,
                                     isActive: item.isFavorite
                                 ) {
@@ -104,7 +105,7 @@ struct CraftItemDetailView: View {
 
                                 actionButton(
                                     icon: "folder.badge.plus",
-                                    label: "Collectie",
+                                    label: L.collection,
                                     color: Theme.primaryColor
                                 ) {
                                     showingCollectionPicker = true
@@ -112,7 +113,7 @@ struct CraftItemDetailView: View {
 
                                 actionButton(
                                     icon: "square.and.arrow.up",
-                                    label: "Deel",
+                                    label: L.share,
                                     color: Theme.success
                                 ) {
                                     shareItem()
@@ -124,7 +125,7 @@ struct CraftItemDetailView: View {
                                             Image(systemName: "arrow.up.right.square")
                                                 .font(.title3)
                                                 .foregroundStyle(Theme.accentLight)
-                                            Text("Open")
+                                            Text(L.open)
                                                 .font(.caption2)
                                                 .foregroundStyle(Theme.textSecondary)
                                         }
@@ -138,11 +139,11 @@ struct CraftItemDetailView: View {
                             // Notes
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text("Notities")
+                                    Text(L.notes)
                                         .font(.headline)
                                         .foregroundStyle(.white)
                                     Spacer()
-                                    Button(isEditingNotes ? "Klaar" : "Bewerk") {
+                                    Button(isEditingNotes ? L.done : L.edit) {
                                         isEditingNotes.toggle()
                                     }
                                     .font(.subheadline)
@@ -150,7 +151,7 @@ struct CraftItemDetailView: View {
                                 }
 
                                 if isEditingNotes {
-                                    TextField("Voeg notities toe...", text: Binding(
+                                    TextField(L.addNotes, text: Binding(
                                         get: { item.notes ?? "" },
                                         set: { item.notes = $0.isEmpty ? nil : $0 }
                                     ), axis: .vertical)
@@ -160,7 +161,7 @@ struct CraftItemDetailView: View {
                                     .foregroundStyle(.white)
                                     .lineLimit(3...6)
                                 } else {
-                                    Text(item.notes ?? "Geen notities")
+                                    Text(item.notes ?? L.noNotes)
                                         .font(.body)
                                         .foregroundStyle(item.notes == nil ? Theme.textTertiary : .white)
                                 }
@@ -170,7 +171,7 @@ struct CraftItemDetailView: View {
                             if let itemCollections = item.collections, !itemCollections.isEmpty {
                                 Divider().overlay(Theme.borderColor)
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("In collecties")
+                                    Text(L.inCollections)
                                         .font(.headline)
                                         .foregroundStyle(.white)
                                     FlowLayout(spacing: 8) {
@@ -189,13 +190,35 @@ struct CraftItemDetailView: View {
                                     }
                                 }
                             }
+
+                            Divider().overlay(Theme.borderColor)
+
+                            // Delete button
+                            Button(role: .destructive) {
+                                showingDeleteConfirmation = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "trash")
+                                    Text(L.deleteItem)
+                                }
+                                .font(.subheadline.weight(.medium))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Theme.danger.opacity(0.1))
+                                .foregroundStyle(Theme.danger)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Theme.danger.opacity(0.3), lineWidth: 1)
+                                )
+                            }
                         }
                         .padding(.horizontal)
                     }
                     .padding(.bottom, 32)
                 }
             }
-            .navigationTitle("Detail")
+            .navigationTitle(L.detail)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -208,6 +231,14 @@ struct CraftItemDetailView: View {
             }
             .sheet(isPresented: $showingCollectionPicker) {
                 CollectionPickerSheet(item: item)
+            }
+            .alert(L.deleteItem, isPresented: $showingDeleteConfirmation) {
+                Button(L.cancel, role: .cancel) { }
+                Button(L.delete, role: .destructive) {
+                    deleteItem()
+                }
+            } message: {
+                Text(L.deleteItemConfirm)
             }
         }
     }
@@ -242,6 +273,12 @@ struct CraftItemDetailView: View {
            let rootVC = window.rootViewController {
             rootVC.present(activityVC, animated: true)
         }
+    }
+
+    private func deleteItem() {
+        modelContext.delete(item)
+        try? modelContext.save()
+        dismiss()
     }
 }
 

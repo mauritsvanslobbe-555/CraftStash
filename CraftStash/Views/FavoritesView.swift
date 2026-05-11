@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct FavoritesView: View {
+    @Environment(LanguageManager.self) private var languageManager
     @Query(filter: #Predicate<CraftItem> { $0.isFavorite },
            sort: \CraftItem.dateAdded,
            order: .reverse)
@@ -29,7 +30,7 @@ struct FavoritesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Favorieten")
+                    Text(L.tabFavorites)
                         .font(.title2.bold())
                         .foregroundStyle(.white)
                 }
@@ -49,11 +50,11 @@ struct FavoritesView: View {
                 .font(.system(size: 56))
                 .foregroundStyle(Theme.danger)
 
-            Text("Geen favorieten")
+            Text(L.noFavorites)
                 .font(.title3.bold())
                 .foregroundStyle(.white)
 
-            Text("Markeer knutselideeën als favoriet\nom ze hier terug te vinden!")
+            Text(L.markFavorites)
                 .font(.callout)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -64,6 +65,7 @@ struct FavoritesView: View {
 
 #Preview {
     FavoritesView()
+        .environment(LanguageManager.shared)
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

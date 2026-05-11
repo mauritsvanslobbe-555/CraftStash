@@ -4,16 +4,27 @@ import PhotosUI
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(LanguageManager.self) private var languageManager
     @Query(sort: \CraftItem.dateAdded, order: .reverse) private var items: [CraftItem]
     @State private var searchText = ""
     @State private var selectedItem: CraftItem?
     @State private var showingImportSheet = false
     @State private var showingImagePicker = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var activeFilter = "Alles"
+    @State private var activeFilter = "all"
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
-    private let filters = ["Alles", "Video's", "Foto's", "YouTube", "Instagram", "TikTok", "Pinterest"]
+    private var filterOptions: [(id: String, label: String)] {
+        [
+            ("all", L.filterAll),
+            ("videos", L.filterVideos),
+            ("photos", L.filterPhotos),
+            ("YouTube", "YouTube"),
+            ("Instagram", "Instagram"),
+            ("TikTok", "TikTok"),
+            ("Pinterest", "Pinterest")
+        ]
+    }
 
     var filteredItems: [CraftItem] {
         var result = items
@@ -26,11 +37,11 @@ struct HomeView: View {
         }
 
         switch activeFilter {
-        case "Video's":
+        case "videos":
             result = result.filter { $0.isVideo }
-        case "Foto's":
+        case "photos":
             result = result.filter { !$0.isVideo }
-        case "Alles":
+        case "all":
             break
         default:
             result = result.filter { $0.sourcePlatform.localizedCaseInsensitiveContains(activeFilter) }
@@ -53,33 +64,36 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("CraftStash")
+                    Text(L.appName)
                         .font(.title2.bold())
                         .foregroundStyle(.white)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            showingImportSheet = true
+                    HStack(spacing: 12) {
+                        languageSwitchButton
+                        Menu {
+                            Button {
+                                showingImportSheet = true
+                            } label: {
+                                Label(L.addLink, systemImage: "link.badge.plus")
+                            }
+                            Button {
+                                showingImagePicker = true
+                            } label: {
+                                Label(L.saveScreenshot, systemImage: "photo.on.rectangle.angled")
+                            }
                         } label: {
-                            Label("Link toevoegen", systemImage: "link.badge.plus")
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(Theme.primaryColor)
                         }
-                        Button {
-                            showingImagePicker = true
-                        } label: {
-                            Label("Screenshot opslaan", systemImage: "photo.on.rectangle.angled")
-                        }
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(Theme.primaryColor)
                     }
                 }
             }
             .toolbarBackground(Theme.bg, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .searchable(text: $searchText, prompt: "Zoek in je stash...")
+            .searchable(text: $searchText, prompt: L.searchPlaceholder)
             .sheet(item: $selectedItem) { item in
                 CraftItemDetailView(item: item)
             }
@@ -96,20 +110,30 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Language Switch
+    private var languageSwitchButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                languageManager.current = languageManager.current == .nl ? .en : .nl
+            }
+        } label: {
+            Text(languageManager.current == .nl ? "🇬🇧" : "🇳🇱")
+                .font(.title3)
+        }
+    }
+
     // MARK: - Main Content
     private var mainContentView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Welcome banner
                 if !hasSeenWelcome {
                     welcomeBanner
                         .padding(.horizontal)
                         .padding(.bottom, 12)
                 }
 
-                // Stats
                 HStack {
-                    Text("\(items.count) items opgeslagen")
+                    Text("\(items.count) \(L.itemsCount)")
                         .font(.caption)
                         .foregroundStyle(Theme.textSecondary)
                     Spacer()
@@ -117,13 +141,12 @@ struct HomeView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 8)
 
-                // Filter chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
-                        ForEach(filters, id: \.self) { filter in
-                            FilterChip(label: filter, isActive: activeFilter == filter) {
+                        ForEach(filterOptions, id: \.id) { filter in
+                            FilterChip(label: filter.label, isActive: activeFilter == filter.id) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    activeFilter = filter
+                                    activeFilter = filter.id
                                 }
                             }
                         }
@@ -133,7 +156,6 @@ struct HomeView: View {
                 }
                 .padding(.bottom, 12)
 
-                // Masonry Grid
                 MasonryGrid(items: filteredItems) { item in
                     selectedItem = item
                 }
@@ -149,7 +171,7 @@ struct HomeView: View {
             HStack {
                 Image(systemName: "lightbulb.fill")
                     .foregroundStyle(.yellow)
-                Text("Tip: Zo bewaar je ideeën")
+                Text(L.tipTitle)
                     .font(.subheadline.bold())
                     .foregroundStyle(.white)
                 Spacer()
@@ -160,7 +182,7 @@ struct HomeView: View {
                         .foregroundStyle(Theme.textTertiary)
                 }
             }
-            Text("Zie je een leuk knutselfilmpje of -plaatje? Tik op de deel-knop en kies CraftStash!")
+            Text(L.tipDesc)
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
         }
@@ -173,18 +195,19 @@ struct HomeView: View {
         )
     }
 
-    // MARK: - Onboarding (shown until first item is saved)
+    // MARK: - Onboarding
     private var emptyStateView: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Hero
+                // Hero with slogan
                 VStack(spacing: 8) {
                     Text("✨")
                         .font(.system(size: 40))
-                    Text("Welkom bij CraftStash!")
+                    Text(L.sloganTitle)
                         .font(.title2.bold())
                         .foregroundStyle(.white)
-                    Text("Bewaar al je knutselideeën\nop één plek.")
+                        .multilineTextAlignment(.center)
+                    Text(L.sloganSubtitle)
                         .font(.callout)
                         .foregroundStyle(.white.opacity(0.85))
                         .multilineTextAlignment(.center)
@@ -195,9 +218,9 @@ struct HomeView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
 
-                // Steps
+                // What is StuffStash
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("ZO WERKT HET")
+                    Text(L.howItWorks)
                         .font(.caption.bold())
                         .foregroundStyle(Theme.textSecondary)
                         .tracking(0.5)
@@ -206,26 +229,26 @@ struct HomeView: View {
                     onboardingStep(
                         num: "1",
                         icon: "square.and.arrow.up",
-                        title: "Zie een leuk knutselidee",
-                        desc: "Op YouTube, Instagram, TikTok, Pinterest of waar dan ook."
+                        title: L.onboardStep1Title,
+                        desc: L.onboardStep1Desc
                     )
                     onboardingStep(
                         num: "2",
                         icon: "arrowshape.turn.up.right.fill",
-                        title: "Tik op de deel-knop",
-                        desc: "Kies 'CraftStash' in het deelmenu. Je kunt ook screenshots of foto's delen!"
+                        title: L.onboardStep2Title,
+                        desc: L.onboardStep2Desc
                     )
                     onboardingStep(
                         num: "3",
                         icon: "checkmark.circle.fill",
-                        title: "Opgeslagen!",
-                        desc: "Je knutselidee staat veilig in CraftStash. Organiseer het in mappen en bekijk het wanneer je wilt."
+                        title: L.onboardStep3Title,
+                        desc: L.onboardStep3Desc
                     )
                 }
 
                 // Supported platforms
                 VStack(spacing: 12) {
-                    Text("WERKT MET")
+                    Text(L.worksWithTitle)
                         .font(.caption.bold())
                         .foregroundStyle(Theme.textSecondary)
                         .tracking(0.5)
@@ -237,7 +260,7 @@ struct HomeView: View {
                         PlatformBadge(name: "Pinterest", color: Theme.color(for: "berry"))
                     }
 
-                    Text("En alle andere apps met een deel-knop!")
+                    Text(L.worksWithFooter)
                         .font(.caption)
                         .foregroundStyle(Theme.textTertiary)
                 }
@@ -250,7 +273,7 @@ struct HomeView: View {
                     } label: {
                         HStack {
                             Image(systemName: "link.badge.plus")
-                            Text("Link toevoegen")
+                            Text(L.addLink)
                         }
                         .font(.headline)
                         .frame(maxWidth: .infinity)
@@ -265,7 +288,7 @@ struct HomeView: View {
                     } label: {
                         HStack {
                             Image(systemName: "photo.on.rectangle.angled")
-                            Text("Screenshot opslaan")
+                            Text(L.saveScreenshot)
                         }
                         .font(.headline)
                         .frame(maxWidth: .infinity)
@@ -339,7 +362,7 @@ struct HomeView: View {
                     try? data.write(to: fileURL)
 
                     let item = CraftItem(
-                        title: "Screenshot knutselidee",
+                        title: L.screenshotTitle,
                         urlString: fileURL.absoluteString,
                         thumbnailURLString: fileURL.absoluteString,
                         sourcePlatform: "Screenshot"
@@ -360,13 +383,11 @@ struct HomeView: View {
         let pending = SharedDataManager.loadPendingItems()
         guard !pending.isEmpty else { return }
 
-        // Collect items that need background thumbnail fetching
         var itemsNeedingThumbnails: [(CraftItem, String)] = []
 
         for shared in pending {
             var thumbnailURL: String? = Self.generateThumbnailURL(for: shared.urlString)
 
-            // If shared item has an image file, copy it and use as thumbnail
             if let imageFileName = shared.imageFileName,
                let sharedImageURL = SharedDataManager.sharedImageURL(for: imageFileName) {
                 let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -378,14 +399,13 @@ struct HomeView: View {
             }
 
             let item = CraftItem(
-                title: shared.title ?? "Knutselidee",
+                title: shared.title ?? L.defaultItemTitle,
                 urlString: shared.urlString,
                 thumbnailURLString: thumbnailURL,
                 sourcePlatform: shared.sourcePlatform
             )
             modelContext.insert(item)
 
-            // Queue items without a thumbnail for background fetching
             if thumbnailURL == nil {
                 itemsNeedingThumbnails.append((item, shared.urlString))
             }
@@ -394,7 +414,6 @@ struct HomeView: View {
         SharedDataManager.clearPendingItems()
         try? modelContext.save()
 
-        // Fetch thumbnails in the background for items that don't have one yet
         if !itemsNeedingThumbnails.isEmpty {
             let thumbnailRequests = itemsNeedingThumbnails.map { (item, urlString) in
                 (item.persistentModelID, urlString)
@@ -518,6 +537,7 @@ struct PlatformBadge: View {
 
 #Preview {
     HomeView()
+        .environment(LanguageManager.shared)
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

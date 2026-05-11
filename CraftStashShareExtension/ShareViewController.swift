@@ -33,7 +33,6 @@ class ShareViewController: UIViewController {
         containerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(containerView)
 
-        // Preview image
         previewImageView.contentMode = .scaleAspectFill
         previewImageView.clipsToBounds = true
         previewImageView.backgroundColor = UIColor(red: 1.0, green: 0.44, blue: 0.37, alpha: 0.1)
@@ -41,27 +40,25 @@ class ShareViewController: UIViewController {
         previewImageView.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(previewImageView)
 
-        // App icon / scissors emoji
         let iconLabel = UILabel()
-        iconLabel.text = "✂️"
+        iconLabel.text = "📦"
         iconLabel.font = .systemFont(ofSize: 48)
         iconLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(iconLabel)
 
-        titleLabel.text = "Opslaan in CraftStash"
+        titleLabel.text = "Opslaan in StuffStash"
         titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(titleLabel)
 
-        subtitleLabel.text = "Knutselidee wordt geladen..."
+        subtitleLabel.text = "Idee wordt geladen..."
         subtitleLabel.font = .systemFont(ofSize: 14)
         subtitleLabel.textColor = .secondaryLabel
         subtitleLabel.textAlignment = .center
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(subtitleLabel)
 
-        // Name text field
         nameTextField.placeholder = "Geef een naam (optioneel)"
         nameTextField.font = .systemFont(ofSize: 15)
         nameTextField.borderStyle = .none
@@ -150,7 +147,6 @@ class ShareViewController: UIViewController {
     private func showPreviewImage(_ image: UIImage) {
         previewImageView.image = image
         previewImageView.isHidden = false
-        // Move icon below the preview
         for constraint in containerView.constraints {
             if constraint.firstItem as? UILabel != nil && constraint.secondItem as? UIView === containerView && constraint.firstAttribute == .top {
                 constraint.constant = 184
@@ -167,7 +163,6 @@ class ShareViewController: UIViewController {
         }
 
         for item in extensionItems {
-            // Extract title from the shared item (e.g. page title from browser)
             if let attributedTitle = item.attributedContentText?.string, !attributedTitle.isEmpty {
                 sharedTitle = attributedTitle
             }
@@ -175,7 +170,6 @@ class ShareViewController: UIViewController {
             guard let attachments = item.attachments else { continue }
 
             for attachment in attachments {
-                // Try image first
                 if attachment.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.image.identifier) { [weak self] data, _ in
                         var imageData: Data?
@@ -205,7 +199,6 @@ class ShareViewController: UIViewController {
                     return
                 }
 
-                // Try URL
                 if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.url.identifier) { [weak self] data, _ in
                         let urlString = (data as? URL)?.absoluteString
@@ -224,7 +217,6 @@ class ShareViewController: UIViewController {
                     return
                 }
 
-                // Try plain text (some apps share URLs as text)
                 if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier) { [weak self] data, _ in
                         let text = data as? String
@@ -247,16 +239,14 @@ class ShareViewController: UIViewController {
     }
 
     @objc private func saveTapped() {
-        // Get user-entered or auto-filled title
         let userTitle = nameTextField.text?.trimmingCharacters(in: .whitespaces)
         let finalTitle = (userTitle?.isEmpty == false) ? userTitle : sharedTitle
 
-        // Save shared image
         if let imageData = sharedImageData {
             if let fileName = SharedDataManager.saveImageToSharedContainer(imageData) {
                 let item = SharedDataManager.SharedItem(
                     urlString: "local-image://\(fileName)",
-                    title: finalTitle ?? "Knutselidee",
+                    title: finalTitle ?? "Idee",
                     sourcePlatform: "Screenshot",
                     dateAdded: Date(),
                     imageFileName: fileName
@@ -267,7 +257,6 @@ class ShareViewController: UIViewController {
             return
         }
 
-        // Save shared URL
         guard let urlString = sharedURL else {
             subtitleLabel.text = "Geen link of afbeelding gevonden"
             return
@@ -290,7 +279,7 @@ class ShareViewController: UIViewController {
         UIView.animate(withDuration: 0.3) {
             self.activityIndicator.isHidden = true
             self.checkmarkImageView.isHidden = false
-            self.subtitleLabel.text = "Opgeslagen! ✂️"
+            self.subtitleLabel.text = "Opgeslagen! 📦"
             self.saveButton.isHidden = true
         }
 

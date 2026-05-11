@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Environment(LanguageManager.self) private var languageManager
     @State private var selectedTab: Tab = .home
 
     enum Tab: String {
@@ -12,31 +13,31 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Label("Home", systemImage: "house.fill")
+                    Label(L.tabHome, systemImage: "house.fill")
                 }
                 .tag(Tab.home)
 
             CollectionsView()
                 .tabItem {
-                    Label("Collecties", systemImage: "square.grid.2x2.fill")
+                    Label(L.tabCollections, systemImage: "square.grid.2x2.fill")
                 }
                 .tag(Tab.collections)
 
             SearchView()
                 .tabItem {
-                    Label("Zoeken", systemImage: "magnifyingglass")
+                    Label(L.tabSearch, systemImage: "magnifyingglass")
                 }
                 .tag(Tab.search)
 
             FavoritesView()
                 .tabItem {
-                    Label("Favorieten", systemImage: "heart.fill")
+                    Label(L.tabFavorites, systemImage: "heart.fill")
                 }
                 .tag(Tab.favorites)
 
             GuideView()
                 .tabItem {
-                    Label("Help", systemImage: "questionmark.circle")
+                    Label(L.tabHelp, systemImage: "questionmark.circle")
                 }
                 .tag(Tab.guide)
         }
@@ -47,5 +48,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(LanguageManager.shared)
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
 }

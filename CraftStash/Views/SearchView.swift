@@ -3,6 +3,7 @@ import SwiftData
 
 struct SearchView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(LanguageManager.self) private var languageManager
     @Query(sort: \CraftItem.dateAdded, order: .reverse) private var items: [CraftItem]
     @State private var query = ""
     @State private var selectedItem: CraftItem?
@@ -29,7 +30,7 @@ struct SearchView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
                                 .foregroundStyle(Theme.textTertiary)
-                            TextField("Zoek in je stash...", text: $query)
+                            TextField(L.searchPlaceholder, text: $query)
                                 .foregroundStyle(.white)
                                 .autocorrectionDisabled()
                             if !query.isEmpty {
@@ -63,7 +64,7 @@ struct SearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Zoeken")
+                    Text(L.searchTitle)
                         .font(.title2.bold())
                         .foregroundStyle(.white)
                 }
@@ -79,9 +80,8 @@ struct SearchView: View {
 
     private var emptySearchView: some View {
         VStack(alignment: .leading, spacing: 24) {
-            // Trending tags
             VStack(alignment: .leading, spacing: 10) {
-                Text("POPULAIRE TAGS")
+                Text(L.popularTags)
                     .font(.caption.bold())
                     .foregroundStyle(Theme.textSecondary)
                     .tracking(0.5)
@@ -109,9 +109,8 @@ struct SearchView: View {
                 }
             }
 
-            // Platforms
             VStack(alignment: .leading, spacing: 10) {
-                Text("PLATFORMEN")
+                Text(L.platforms)
                     .font(.caption.bold())
                     .foregroundStyle(Theme.textSecondary)
                     .tracking(0.5)
@@ -153,7 +152,7 @@ struct SearchView: View {
     private var searchResultsView: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("\(searchResults.count) resultaten")
+                Text("\(searchResults.count) \(L.results)")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
@@ -166,10 +165,10 @@ struct SearchView: View {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 40))
                         .foregroundStyle(Theme.textTertiary)
-                    Text("Geen resultaten")
+                    Text(L.noResults)
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text("Probeer een andere zoekterm")
+                    Text(L.tryDifferent)
                         .font(.caption)
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -187,6 +186,7 @@ struct SearchView: View {
 
 #Preview {
     SearchView()
+        .environment(LanguageManager.shared)
         .modelContainer(for: [CraftItem.self, CraftCollection.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

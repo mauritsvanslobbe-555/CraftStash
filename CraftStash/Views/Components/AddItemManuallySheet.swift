@@ -11,7 +11,7 @@ struct AddItemManuallySheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Plak een link...", text: $urlText)
+                    TextField(L.pasteLink, text: $urlText)
                         .keyboardType(.URL)
                         .textContentType(.URL)
                         .autocorrectionDisabled()
@@ -24,31 +24,31 @@ struct AddItemManuallySheet: View {
                 } header: {
                     Text("Link")
                 } footer: {
-                    Text("Plak een link van YouTube, Pinterest, Instagram, TikTok of een andere website")
+                    Text(L.linkFooter)
                 }
 
-                Section("Titel") {
-                    TextField("Naam voor dit knutselidee", text: $title)
+                Section(L.titleLabel) {
+                    TextField(L.titlePlaceholder, text: $title)
                 }
 
                 if isLoading {
                     Section {
                         HStack {
                             ProgressView()
-                            Text("Link info ophalen...")
+                            Text(L.fetchingInfo)
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
             }
-            .navigationTitle("Link toevoegen")
+            .navigationTitle(L.addLinkTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuleer") { dismiss() }
+                    Button(L.cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Bewaar") {
+                    Button(L.save) {
                         saveItem()
                     }
                     .disabled(urlText.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -69,7 +69,7 @@ struct AddItemManuallySheet: View {
                 if title.isEmpty, let fetchedTitle = metadata?.title {
                     title = fetchedTitle
                 }
-                _ = platform // used in saveItem
+                _ = platform
                 isLoading = false
             }
         }
@@ -78,9 +78,8 @@ struct AddItemManuallySheet: View {
     private func saveItem() {
         let url = urlText.trimmingCharacters(in: .whitespaces)
         let platform = detectPlatformSync(from: url)
-        let itemTitle = title.isEmpty ? "Knutselidee" : title
+        let itemTitle = title.isEmpty ? L.defaultItemTitle : title
 
-        // First try YouTube thumbnail (instant, no network needed)
         let youtubeThumbnail = HomeView.generateThumbnailURL(for: url)
 
         let item = CraftItem(
@@ -93,7 +92,6 @@ struct AddItemManuallySheet: View {
         try? modelContext.save()
         dismiss()
 
-        // Then fetch a real thumbnail in the background for non-YouTube URLs
         if youtubeThumbnail == nil {
             let itemID = item.persistentModelID
             Task {

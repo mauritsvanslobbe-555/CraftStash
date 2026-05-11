@@ -11,9 +11,9 @@ struct AddItemsToCollectionSheet: View {
             List {
                 if allItems.isEmpty {
                     ContentUnavailableView {
-                        Label("Geen ideeën", systemImage: "scissors")
+                        Label(L.noIdeas, systemImage: "scissors")
                     } description: {
-                        Text("Deel eerst knutselideeën naar CraftStash")
+                        Text(L.shareToStuffStash)
                     }
                 }
 
@@ -45,11 +45,11 @@ struct AddItemsToCollectionSheet: View {
                     }
                 }
             }
-            .navigationTitle("Ideeën toevoegen")
+            .navigationTitle(L.addIdeasButton)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Klaar") { dismiss() }
+                    Button(L.done) { dismiss() }
                 }
             }
         }
