@@ -33,13 +33,45 @@ workflows:
           keychain initialize
           keychain add-certificates
 
+          # Debug: show available signing identities
+          echo "=== Signing identities in keychain ==="
+          security find-identity -p codesigning -v
+
+          # Debug: check CERTIFICATE_PRIVATE_KEY
+          echo "=== CERTIFICATE_PRIVATE_KEY set? ==="
+          [ -n "$CERTIFICATE_PRIVATE_KEY" ] && echo "YES" || echo "NO"
+
+          # Extract private key from installed .p12 certificate
+          P12_FILE=$(find /Users/builder/Library -name "*.p12" 2>/dev/null | head -1)
+          echo "=== Found .p12 file: $P12_FILE ==="
+
+          if [ -n "$P12_FILE" ]; then
+            openssl pkcs12 -in "$P12_FILE" -nocerts -nodes -out /tmp/cert_key.pem -passin pass: 2>/dev/null || true
+            if [ -f /tmp/cert_key.pem ] && [ -s /tmp/cert_key.pem ]; then
+              export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
+              echo "Private key extracted successfully"
+            else
+              echo "Could not extract key with empty password, trying with CM password"
+              openssl pkcs12 -in "$P12_FILE" -nocerts -nodes -out /tmp/cert_key.pem -legacy -passin pass: 2>/dev/null || true
+              if [ -f /tmp/cert_key.pem ] && [ -s /tmp/cert_key.pem ]; then
+                export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
+                echo "Private key extracted with legacy flag"
+              fi
+            fi
+          fi
+
+          # Fetch signing files with the extracted private key
+          app-store-connect fetch-signing-files com.craftstash.app --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files com.craftstash.app.share-extension --type IOS_APP_STORE --create
+
+          # Re-add any new certificates
+          keychain add-certificates
+
+          xcode-project use-profiles
+
       - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
-
-          # Write API key to file for xcodebuild authentication
-          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
-
           xcodebuild archive \
             -project CraftStash.xcodeproj \
             -scheme CraftStash \
@@ -47,20 +79,12 @@ workflows:
             -configuration Release \
             -archivePath build/CraftStash.xcarchive \
             DEVELOPMENT_TEAM=9959PXX99M \
-            CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath /tmp/AuthKey.p8 \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -allowProvisioningUpdates
 
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath build/ipa \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath /tmp/AuthKey.p8 \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -exportPath build/ipa
 
     artifacts:
       - build/ipa/*.ipa
