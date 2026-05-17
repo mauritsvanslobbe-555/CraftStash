@@ -8,10 +8,11 @@ workflows:
       app_store_connect: CodeMagic1
 
     environment:
+      ios_signing:
+        certificates:
+          - StuffStash Distribution
       vars:
         XCODE_SCHEME: "CraftStash"
-        BUNDLE_ID: "com.craftstash.app"
-        EXTENSION_BUNDLE_ID: "com.craftstash.app.share-extension"
       xcode: 26.0
 
     scripts:
@@ -26,11 +27,8 @@ workflows:
 
       - name: Set up code signing
         script: |
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
-          app-store-connect fetch-signing-files $EXTENSION_BUNDLE_ID --type IOS_APP_STORE --create
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles
 
       - name: Build IPA
         script: |
@@ -42,12 +40,20 @@ workflows:
             -configuration Release \
             -archivePath build/CraftStash.xcarchive \
             DEVELOPMENT_TEAM=9959PXX99M \
-            -allowProvisioningUpdates
+            CODE_SIGN_STYLE=Automatic \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath build/ipa
+            -exportPath build/ipa \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
     artifacts:
       - build/ipa/*.ipa
