@@ -27,32 +27,45 @@ workflows:
           keychain initialize
 
           # Write App Store Connect API key to file for xcodebuild
-          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
+          # The env var may contain literal \n or real newlines
+          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
 
-          # Verify the key file
-          echo "=== API Key file ==="
+          # Verify the key file is valid PEM
+          echo "=== API Key file debug ==="
           ls -la /tmp/AuthKey.p8
+          wc -l /tmp/AuthKey.p8
           head -1 /tmp/AuthKey.p8
+          tail -1 /tmp/AuthKey.p8
+
+          # If the file doesn't start with BEGIN, try sed replacement
+          if ! head -1 /tmp/AuthKey.p8 | grep -q "BEGIN"; then
+            echo "Key doesn't look like PEM, trying sed replacement..."
+            echo "$APP_STORE_CONNECT_PRIVATE_KEY" | sed 's/\\n/\'$'\n''/g' > /tmp/AuthKey.p8
+            echo "After sed fix:"
+            head -1 /tmp/AuthKey.p8
+            tail -1 /tmp/AuthKey.p8
+            wc -l /tmp/AuthKey.p8
+          fi
 
           # Create automatic signing export options
-          cat > /tmp/exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>9959PXX99M</string>
-              <key>signingStyle</key>
-              <string>automatic</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>uploadSymbols</key>
-              <true/>
-          </dict>
-          </plist>
-          PLIST
+          cat > /tmp/exportOptions.plist <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>9959PXX99M</string>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+</dict>
+</plist>
+PLIST
 
       - name: Build IPA
         script: |
