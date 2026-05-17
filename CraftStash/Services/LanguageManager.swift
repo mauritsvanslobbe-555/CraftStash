@@ -20,8 +20,8 @@ enum AppLanguage: String, CaseIterable {
 }
 
 @Observable
-final class LanguageManager {
-    static let shared = LanguageManager()
+final class LanguageManager: @unchecked Sendable {
+    nonisolated(unsafe) static let shared = LanguageManager()
 
     var current: AppLanguage {
         didSet {
