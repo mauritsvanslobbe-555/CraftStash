@@ -11,6 +11,9 @@ workflows:
       ios_signing:
         certificates:
           - StuffStash Distribution
+        provisioning_profiles:
+          - craftstash_appstore_v2
+          - craftstash_share_extension_appstore_v2
       vars:
         XCODE_SCHEME: "CraftStash"
       xcode: 26.0
