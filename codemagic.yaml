@@ -36,6 +36,10 @@ workflows:
       - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
+
+          # Write API key to file for xcodebuild authentication
+          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
+
           xcodebuild archive \
             -project CraftStash.xcodeproj \
             -scheme CraftStash \
@@ -45,7 +49,7 @@ workflows:
             DEVELOPMENT_TEAM=9959PXX99M \
             CODE_SIGN_STYLE=Automatic \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyPath /tmp/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
@@ -54,7 +58,7 @@ workflows:
             -exportOptionsPlist exportOptions.plist \
             -exportPath build/ipa \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyPath /tmp/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
