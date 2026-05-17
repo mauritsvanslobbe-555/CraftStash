@@ -47,25 +47,15 @@ workflows:
             wc -l /tmp/AuthKey.p8
           fi
 
-          # Create automatic signing export options
-          cat > /tmp/exportOptions.plist <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>teamID</key>
-    <string>9959PXX99M</string>
-    <key>signingStyle</key>
-    <string>automatic</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>uploadSymbols</key>
-    <true/>
-</dict>
-</plist>
-PLIST
+          # Create automatic signing export options using PlistBuddy
+          /usr/libexec/PlistBuddy -c "Clear dict" /tmp/exportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :method string app-store" /tmp/exportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :teamID string 9959PXX99M" /tmp/exportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" /tmp/exportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :uploadBitcode bool false" /tmp/exportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" /tmp/exportOptions.plist
+          echo "=== Export options ==="
+          cat /tmp/exportOptions.plist
 
       - name: Build IPA
         script: |
