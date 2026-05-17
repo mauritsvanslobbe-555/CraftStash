@@ -83,7 +83,7 @@ workflows:
 
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
+            -exportOptionsPlist /Users/builder/export_options.plist \
             -exportPath build/ipa
 
     artifacts:
