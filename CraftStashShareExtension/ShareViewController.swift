@@ -3,6 +3,17 @@ import UniformTypeIdentifiers
 
 class ShareViewController: UIViewController {
 
+    // Design tokens (matching Theme.swift)
+    private let bgColor = UIColor(red: 0.04, green: 0.03, blue: 0.06, alpha: 1.0)           // 0x0A0810
+    private let surfaceColor = UIColor(red: 0.086, green: 0.071, blue: 0.122, alpha: 1.0)    // 0x16121F
+    private let surfaceHiColor = UIColor(red: 0.122, green: 0.102, blue: 0.173, alpha: 1.0)  // 0x1F1A2C
+    private let inkColor = UIColor(red: 0.957, green: 0.945, blue: 0.98, alpha: 1.0)         // 0xF4F1FA
+    private let inkMuteColor = UIColor(red: 0.957, green: 0.945, blue: 0.98, alpha: 0.62)
+    private let inkDimColor = UIColor(red: 0.957, green: 0.945, blue: 0.98, alpha: 0.38)
+    private let primaryColor = UIColor(red: 0.482, green: 0.361, blue: 1.0, alpha: 1.0)      // 0x7B5CFF
+    private let borderColor = UIColor.white.withAlphaComponent(0.07)
+    private let mintColor = UIColor(red: 0.31, green: 0.89, blue: 0.69, alpha: 1.0)          // 0x4FE3B0
+
     private let containerView = UIView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
@@ -25,76 +36,89 @@ class ShareViewController: UIViewController {
     }
 
     private func setupUI() {
-        view.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.55)
 
-        containerView.backgroundColor = .systemBackground
-        containerView.layer.cornerRadius = 20
+        containerView.backgroundColor = bgColor
+        containerView.layer.cornerRadius = 28
         containerView.clipsToBounds = true
+        containerView.layer.borderWidth = 1
+        containerView.layer.borderColor = UIColor.white.withAlphaComponent(0.12).cgColor
         containerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(containerView)
 
         // Preview image
         previewImageView.contentMode = .scaleAspectFill
         previewImageView.clipsToBounds = true
-        previewImageView.backgroundColor = UIColor(red: 1.0, green: 0.44, blue: 0.37, alpha: 0.1)
+        previewImageView.backgroundColor = surfaceColor
         previewImageView.isHidden = true
         previewImageView.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(previewImageView)
 
-        // App icon / scissors emoji
+        // App icon
         let iconLabel = UILabel()
-        iconLabel.text = "✂️"
-        iconLabel.font = .systemFont(ofSize: 48)
+        iconLabel.text = "\u{2702}\u{FE0F}"
+        iconLabel.font = .systemFont(ofSize: 42)
         iconLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(iconLabel)
 
-        titleLabel.text = "Opslaan in CraftStash"
+        titleLabel.text = "Opslaan in StuffStash"
         titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+        titleLabel.textColor = inkColor
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(titleLabel)
 
-        subtitleLabel.text = "Knutselidee wordt geladen..."
-        subtitleLabel.font = .systemFont(ofSize: 14)
-        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.text = "Idee wordt geladen..."
+        subtitleLabel.font = .systemFont(ofSize: 13)
+        subtitleLabel.textColor = inkMuteColor
         subtitleLabel.textAlignment = .center
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(subtitleLabel)
 
         // Name text field
         nameTextField.placeholder = "Geef een naam (optioneel)"
-        nameTextField.font = .systemFont(ofSize: 15)
+        nameTextField.font = .systemFont(ofSize: 14.5)
         nameTextField.borderStyle = .none
-        nameTextField.backgroundColor = UIColor.secondarySystemBackground
-        nameTextField.layer.cornerRadius = 10
-        nameTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 0))
+        nameTextField.backgroundColor = surfaceColor
+        nameTextField.textColor = inkColor
+        nameTextField.tintColor = primaryColor
+        nameTextField.attributedPlaceholder = NSAttributedString(
+            string: "Geef een naam (optioneel)",
+            attributes: [.foregroundColor: inkDimColor]
+        )
+        nameTextField.layer.cornerRadius = 14
+        nameTextField.layer.borderWidth = 1
+        nameTextField.layer.borderColor = borderColor.cgColor
+        nameTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 0))
         nameTextField.leftViewMode = .always
-        nameTextField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 0))
+        nameTextField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 0))
         nameTextField.rightViewMode = .always
         nameTextField.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(nameTextField)
 
+        activityIndicator.color = primaryColor
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.startAnimating()
         containerView.addSubview(activityIndicator)
 
         checkmarkImageView.image = UIImage(systemName: "checkmark.circle.fill")
-        checkmarkImageView.tintColor = UIColor(red: 0.18, green: 0.74, blue: 0.56, alpha: 1.0)
+        checkmarkImageView.tintColor = mintColor
         checkmarkImageView.translatesAutoresizingMaskIntoConstraints = false
         checkmarkImageView.isHidden = true
         containerView.addSubview(checkmarkImageView)
 
         saveButton.setTitle("Bewaar", for: .normal)
-        saveButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
-        saveButton.backgroundColor = UIColor(red: 1.0, green: 0.44, blue: 0.37, alpha: 1.0)
+        saveButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
+        saveButton.backgroundColor = primaryColor
         saveButton.setTitleColor(.white, for: .normal)
-        saveButton.layer.cornerRadius = 12
+        saveButton.layer.cornerRadius = 16
         saveButton.translatesAutoresizingMaskIntoConstraints = false
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
         containerView.addSubview(saveButton)
 
         cancelButton.setTitle("Annuleer", for: .normal)
-        cancelButton.titleLabel?.font = .systemFont(ofSize: 15)
+        cancelButton.titleLabel?.font = .systemFont(ofSize: 14)
+        cancelButton.setTitleColor(inkMuteColor, for: .normal)
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
         containerView.addSubview(cancelButton)
@@ -120,15 +144,15 @@ class ShareViewController: UIViewController {
             subtitleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
             subtitleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
 
-            nameTextField.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
+            nameTextField.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
             nameTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
             nameTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
-            nameTextField.heightAnchor.constraint(equalToConstant: 40),
+            nameTextField.heightAnchor.constraint(equalToConstant: 44),
 
-            activityIndicator.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 12),
+            activityIndicator.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 14),
             activityIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
 
-            checkmarkImageView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 12),
+            checkmarkImageView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 14),
             checkmarkImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             checkmarkImageView.widthAnchor.constraint(equalToConstant: 32),
             checkmarkImageView.heightAnchor.constraint(equalToConstant: 32),
@@ -136,7 +160,7 @@ class ShareViewController: UIViewController {
             saveButton.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 16),
             saveButton.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
             saveButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
-            saveButton.heightAnchor.constraint(equalToConstant: 48),
+            saveButton.heightAnchor.constraint(equalToConstant: 52),
 
             cancelButton.topAnchor.constraint(equalTo: saveButton.bottomAnchor, constant: 8),
             cancelButton.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
@@ -150,7 +174,6 @@ class ShareViewController: UIViewController {
     private func showPreviewImage(_ image: UIImage) {
         previewImageView.image = image
         previewImageView.isHidden = false
-        // Move icon below the preview
         for constraint in containerView.constraints {
             if constraint.firstItem as? UILabel != nil && constraint.secondItem as? UIView === containerView && constraint.firstAttribute == .top {
                 constraint.constant = 184
@@ -167,7 +190,6 @@ class ShareViewController: UIViewController {
         }
 
         for item in extensionItems {
-            // Extract title from the shared item (e.g. page title from browser)
             if let attributedTitle = item.attributedContentText?.string, !attributedTitle.isEmpty {
                 sharedTitle = attributedTitle
             }
@@ -224,7 +246,7 @@ class ShareViewController: UIViewController {
                     return
                 }
 
-                // Try plain text (some apps share URLs as text)
+                // Try plain text
                 if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                     attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier) { [weak self] data, _ in
                         let text = data as? String
@@ -247,7 +269,6 @@ class ShareViewController: UIViewController {
     }
 
     @objc private func saveTapped() {
-        // Get user-entered or auto-filled title
         let userTitle = nameTextField.text?.trimmingCharacters(in: .whitespaces)
         let finalTitle = (userTitle?.isEmpty == false) ? userTitle : sharedTitle
 
@@ -290,7 +311,8 @@ class ShareViewController: UIViewController {
         UIView.animate(withDuration: 0.3) {
             self.activityIndicator.isHidden = true
             self.checkmarkImageView.isHidden = false
-            self.subtitleLabel.text = "Opgeslagen! ✂️"
+            self.subtitleLabel.text = "Opgeslagen!"
+            self.subtitleLabel.textColor = self.mintColor
             self.saveButton.isHidden = true
         }
 
@@ -300,7 +322,7 @@ class ShareViewController: UIViewController {
     }
 
     @objc private func cancelTapped() {
-        extensionContext?.cancelRequest(withError: NSError(domain: "com.craftstash", code: 0))
+        extensionContext?.cancelRequest(withError: NSError(domain: "com.stuffstash", code: 0))
     }
 
     private func detectPlatform(from url: String) -> String {

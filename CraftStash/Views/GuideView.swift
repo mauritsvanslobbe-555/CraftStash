@@ -4,7 +4,7 @@ struct GuideView: View {
     @State private var expandedFaq: Int?
 
     private let steps = [
-        GuideStep(icon: "arrow.down.circle", num: "1", title: "Content opslaan", desc: "Deel een link vanuit Instagram, TikTok, YouTube of een andere app naar CraftStash."),
+        GuideStep(icon: "arrow.down.circle", num: "1", title: "Content opslaan", desc: "Deel een link vanuit Instagram, TikTok, YouTube of een andere app naar StuffStash."),
         GuideStep(icon: "square.stack.3d.up", num: "2", title: "Organiseer in collecties", desc: "Maak collecties aan voor verschillende thema's en voeg items toe."),
         GuideStep(icon: "tag", num: "3", title: "Filter en zoek", desc: "Filter op platform, type (video/afbeelding) of zoek op titel."),
         GuideStep(icon: "eye", num: "4", title: "Bekijk en deel", desc: "Open opgeslagen content in de app of ga terug naar het origineel."),
@@ -18,8 +18,8 @@ struct GuideView: View {
     ]
 
     private let faqs = [
-        FAQ(q: "Welke platformen worden ondersteund?", a: "CraftStash werkt met Instagram, TikTok, YouTube, Pinterest, Facebook, X en meer."),
-        FAQ(q: "Hoe sla ik content op?", a: "Gebruik de 'Delen'-knop in een andere app en kies CraftStash. Je kunt ook screenshots importeren via de + knop."),
+        FAQ(q: "Welke platformen worden ondersteund?", a: "StuffStash werkt met Instagram, TikTok, YouTube, Pinterest, Facebook, X en meer."),
+        FAQ(q: "Hoe sla ik content op?", a: "Gebruik de 'Delen'-knop in een andere app en kies StuffStash. Je kunt ook screenshots importeren via de + knop."),
         FAQ(q: "Kan ik screenshots opslaan?", a: "Ja! Tik op de + knop in het home scherm en kies 'Screenshot opslaan' om foto's uit je bibliotheek te importeren."),
         FAQ(q: "Is er een limiet?", a: "Nee, je kunt onbeperkt content opslaan. Je opslag is alleen beperkt door de ruimte op je apparaat."),
     ]
@@ -29,117 +29,137 @@ struct GuideView: View {
             ZStack {
                 Theme.bg.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(spacing: 20) {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Header
+                        HStack {
+                            Text("Hoe werkt het?")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "questionmark.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(Theme.primarySoft)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+
                         // Hero
-                        VStack(spacing: 8) {
-                            Text("✨")
-                                .font(.system(size: 32))
+                        VStack(spacing: 10) {
+                            Text("\u{2728}")
+                                .font(.system(size: 36))
                             Text("Bewaar alles.\nVind alles terug.")
-                                .font(.headline)
+                                .font(.system(size: 20, weight: .bold))
                                 .foregroundStyle(.white)
                                 .multilineTextAlignment(.center)
-                            Text("CraftStash is jouw persoonlijke bibliotheek voor knutselideeën.")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.8))
+                            Text("StuffStash is jouw persoonlijke bibliotheek voor knutselideeën.")
+                                .font(.system(size: 13.5))
+                                .foregroundStyle(.white.opacity(0.85))
                                 .multilineTextAlignment(.center)
+                                .lineSpacing(2)
                         }
                         .padding(24)
                         .frame(maxWidth: .infinity)
                         .background(Theme.accentGradient)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .padding(.horizontal)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
 
                         // Steps
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("IN 4 STAPPEN")
-                                .font(.caption.bold())
-                                .foregroundStyle(Theme.textSecondary)
-                                .tracking(0.5)
-                                .padding(.horizontal)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Theme.inkDim)
+                                .tracking(1)
+                                .padding(.horizontal, 20)
 
                             ForEach(steps, id: \.num) { step in
                                 HStack(alignment: .top, spacing: 14) {
                                     ZStack {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Theme.primaryColor.opacity(0.15))
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(Theme.primaryTint)
                                             .frame(width: 48, height: 48)
                                         Image(systemName: step.icon)
-                                            .foregroundStyle(Theme.primaryColor)
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(Theme.primarySoft)
                                     }
                                     .overlay(alignment: .topTrailing) {
                                         Text(step.num)
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundStyle(.white)
                                             .frame(width: 18, height: 18)
-                                            .background(Theme.primaryColor)
+                                            .background(Theme.primary)
                                             .clipShape(Circle())
                                             .offset(x: 4, y: -4)
                                     }
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(step.title)
-                                            .font(.subheadline.bold())
-                                            .foregroundStyle(.white)
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundStyle(Theme.ink)
                                         Text(step.desc)
-                                            .font(.caption)
-                                            .foregroundStyle(Theme.textSecondary)
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(Theme.inkMute)
                                             .fixedSize(horizontal: false, vertical: true)
+                                            .lineSpacing(2)
                                     }
                                 }
                                 .padding(14)
-                                .background(Theme.surface1)
-                                .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+                                .background(Theme.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm)
-                                        .stroke(Theme.borderColor, lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Theme.border, lineWidth: 1)
                                 )
-                                .padding(.horizontal)
+                                .padding(.horizontal, 20)
                             }
                         }
+                        .padding(.top, 24)
 
                         // Features grid
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("FEATURES")
-                                .font(.caption.bold())
-                                .foregroundStyle(Theme.textSecondary)
-                                .tracking(0.5)
-                                .padding(.horizontal)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Theme.inkDim)
+                                .tracking(1)
+                                .padding(.horizontal, 20)
 
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                            LazyVGrid(columns: Theme.gridColumns, spacing: 10) {
                                 ForEach(features, id: \.title) { feature in
                                     VStack(alignment: .leading, spacing: 8) {
                                         Image(systemName: feature.icon)
-                                            .font(.title3)
-                                            .foregroundStyle(Theme.primaryColor)
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(Theme.primarySoft)
                                         Text(feature.title)
-                                            .font(.caption.bold())
-                                            .foregroundStyle(.white)
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(Theme.ink)
                                         Text(feature.desc)
-                                            .font(.caption2)
-                                            .foregroundStyle(Theme.textSecondary)
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(Theme.inkMute)
                                             .fixedSize(horizontal: false, vertical: true)
+                                            .lineSpacing(2)
                                     }
                                     .padding(14)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(Theme.surface1)
-                                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+                                    .background(Theme.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm)
-                                            .stroke(Theme.borderColor, lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Theme.border, lineWidth: 1)
                                     )
                                 }
                             }
-                            .padding(.horizontal)
+                            .padding(.horizontal, 20)
                         }
+                        .padding(.top, 24)
 
                         // FAQ
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("VEELGESTELDE VRAGEN")
-                                .font(.caption.bold())
-                                .foregroundStyle(Theme.textSecondary)
-                                .tracking(0.5)
-                                .padding(.horizontal)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Theme.inkDim)
+                                .tracking(1)
+                                .padding(.horizontal, 20)
 
                             ForEach(Array(faqs.enumerated()), id: \.offset) { index, faq in
                                 Button {
@@ -150,50 +170,41 @@ struct GuideView: View {
                                     VStack(alignment: .leading, spacing: 8) {
                                         HStack {
                                             Text(faq.q)
-                                                .font(.subheadline.weight(.medium))
-                                                .foregroundStyle(.white)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(Theme.ink)
                                                 .multilineTextAlignment(.leading)
                                             Spacer()
                                             Image(systemName: expandedFaq == index ? "chevron.up" : "chevron.down")
-                                                .font(.caption)
-                                                .foregroundStyle(Theme.textTertiary)
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(Theme.inkDim)
                                         }
                                         if expandedFaq == index {
                                             Text(faq.a)
-                                                .font(.caption)
-                                                .foregroundStyle(Theme.textSecondary)
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(Theme.inkMute)
                                                 .fixedSize(horizontal: false, vertical: true)
+                                                .lineSpacing(2)
                                         }
                                     }
                                     .padding(14)
-                                    .background(Theme.surface1)
-                                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+                                    .background(Theme.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm)
-                                            .stroke(Theme.borderColor, lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Theme.border, lineWidth: 1)
                                     )
                                 }
                                 .buttonStyle(.plain)
-                                .padding(.horizontal)
+                                .padding(.horizontal, 20)
                             }
                         }
-
-                        Spacer(minLength: 32)
+                        .padding(.top, 24)
+                        .padding(.bottom, 32)
                     }
                     .padding(.top, 8)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("Hoe werkt het?")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white)
-                }
-            }
-            .toolbarBackground(Theme.bg, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationBarHidden(true)
         }
     }
 }

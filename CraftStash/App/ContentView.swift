@@ -40,7 +40,7 @@ struct ContentView: View {
                 }
                 .tag(Tab.guide)
         }
-        .tint(Theme.primaryColor)
+        .tint(Theme.primary)
         .preferredColorScheme(.dark)
     }
 }

@@ -17,26 +17,39 @@ struct FavoritesView: View {
                 if favorites.isEmpty {
                     emptyStateView
                 } else {
-                    ScrollView {
-                        MasonryGrid(items: favorites) { item in
-                            selectedItem = item
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Header
+                            HStack {
+                                Text(L.tabFavorites)
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundStyle(Theme.ink)
+                                Spacer()
+                                Image(systemName: "heart.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Theme.rose)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+
+                            Text("\(favorites.count) items")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.inkMute)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 4)
+
+                            MasonryGrid(items: favorites) { item in
+                                selectedItem = item
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+                            .padding(.bottom, 24)
                         }
-                        .padding(.horizontal)
-                        .padding(.top, 12)
+                        .padding(.top, 8)
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("Favorieten")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white)
-                }
-            }
-            .toolbarBackground(Theme.bg, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationBarHidden(true)
             .sheet(item: $selectedItem) { item in
                 CraftItemDetailView(item: item)
             }
@@ -44,19 +57,20 @@ struct FavoritesView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 12) {
             Image(systemName: "heart.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(Theme.danger)
+                .font(.system(size: 48))
+                .foregroundStyle(Theme.rose)
 
-            Text("Geen favorieten")
-                .font(.title3.bold())
-                .foregroundStyle(.white)
+            Text(L.noFavorites)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Theme.ink)
 
-            Text("Markeer knutselideeën als favoriet\nom ze hier terug te vinden!")
-                .font(.callout)
-                .foregroundStyle(Theme.textSecondary)
+            Text(L.markFavorites)
+                .font(.system(size: 13.5))
+                .foregroundStyle(Theme.inkMute)
                 .multilineTextAlignment(.center)
+                .lineSpacing(2)
         }
         .padding()
     }

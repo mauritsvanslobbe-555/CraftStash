@@ -23,34 +23,49 @@ struct SearchView: View {
             ZStack {
                 Theme.bg.ignoresSafeArea()
 
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
+                        // Header
+                        HStack {
+                            Text(L.searchTitle)
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+
                         // Search bar
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .foregroundStyle(Theme.textTertiary)
-                            TextField("Zoek in je stash...", text: $query)
-                                .foregroundStyle(.white)
+                                .font(.system(size: 15))
+                                .foregroundStyle(query.isEmpty ? Theme.inkMute : Theme.primarySoft)
+                            TextField("", text: $query, prompt: Text(L.searchPlaceholder).foregroundStyle(Theme.inkMute))
+                                .font(.system(size: 14.5))
+                                .foregroundStyle(Theme.ink)
                                 .autocorrectionDisabled()
+                                .tint(Theme.primary)
                             if !query.isEmpty {
                                 Button {
                                     query = ""
                                     activeTag = nil
                                 } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundStyle(Theme.textTertiary)
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Theme.inkDim)
                                 }
                             }
                         }
-                        .padding(14)
-                        .background(Theme.surface2)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
+                        .frame(height: 44)
+                        .padding(.horizontal, 16)
+                        .background(query.isEmpty ? Theme.surface : Theme.surfaceHi)
+                        .clipShape(RoundedRectangle(cornerRadius: 22))
                         .overlay(
-                            RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm)
-                                .stroke(Theme.borderColor, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 22)
+                                .stroke(query.isEmpty ? Theme.border : Theme.primary.opacity(0.4), lineWidth: 1)
                         )
-                        .padding(.horizontal)
-                        .padding(.top, 8)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
 
                         if query.isEmpty {
                             emptySearchView
@@ -60,17 +75,7 @@ struct SearchView: View {
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("Zoeken")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white)
-                }
-            }
-            .toolbarBackground(Theme.bg, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationBarHidden(true)
             .sheet(item: $selectedItem) { item in
                 CraftItemDetailView(item: item)
             }
@@ -81,10 +86,10 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: 24) {
             // Trending tags
             VStack(alignment: .leading, spacing: 10) {
-                Text("POPULAIRE TAGS")
-                    .font(.caption.bold())
-                    .foregroundStyle(Theme.textSecondary)
-                    .tracking(0.5)
+                Text(L.popularTags)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.inkDim)
+                    .tracking(1)
 
                 FlowLayout(spacing: 8) {
                     ForEach(trendingTags, id: \.self) { tag in
@@ -93,15 +98,15 @@ struct SearchView: View {
                             query = tag
                         } label: {
                             Text(tag)
-                                .font(.caption.weight(.medium))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(activeTag == tag ? Theme.primaryColor.opacity(0.15) : Theme.surface2)
-                                .foregroundStyle(activeTag == tag ? Theme.accentLight : Theme.textSecondary)
+                                .font(.system(size: 13, weight: .medium))
+                                .padding(.horizontal, 14)
+                                .frame(height: 34)
+                                .background(activeTag == tag ? Theme.primaryTint : Theme.surface)
+                                .foregroundStyle(activeTag == tag ? Theme.primarySoft : Theme.ink)
                                 .clipShape(Capsule())
                                 .overlay(
                                     Capsule()
-                                        .stroke(activeTag == tag ? Theme.primaryColor : Theme.borderColor, lineWidth: 1)
+                                        .stroke(activeTag == tag ? Theme.primary : Theme.border, lineWidth: 1)
                                 )
                         }
                         .buttonStyle(.plain)
@@ -111,67 +116,78 @@ struct SearchView: View {
 
             // Platforms
             VStack(alignment: .leading, spacing: 10) {
-                Text("PLATFORMEN")
-                    .font(.caption.bold())
-                    .foregroundStyle(Theme.textSecondary)
-                    .tracking(0.5)
+                Text(L.platforms)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.inkDim)
+                    .tracking(1)
 
-                VStack(spacing: 2) {
+                VStack(spacing: 0) {
                     ForEach(["YouTube", "Instagram", "TikTok", "Pinterest"], id: \.self) { platform in
                         Button {
                             query = platform
                         } label: {
-                            HStack {
+                            HStack(spacing: 10) {
                                 Circle()
                                     .fill(Theme.platformColor(for: platform))
-                                    .frame(width: 8, height: 8)
+                                    .frame(width: 10, height: 10)
                                 Text(platform)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(Theme.ink)
                                 Spacer()
                                 let count = items.filter { $0.sourcePlatform.localizedCaseInsensitiveContains(platform) }.count
                                 Text("\(count)")
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.textTertiary)
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundStyle(Theme.inkDim)
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.textTertiary)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(Theme.inkDim)
                             }
-                            .padding(.vertical, 12)
+                            .padding(.vertical, 14)
                         }
                         .buttonStyle(.plain)
-                        Divider()
-                            .overlay(Theme.borderColor)
+
+                        if platform != "Pinterest" {
+                            Rectangle()
+                                .fill(Theme.border)
+                                .frame(height: 1)
+                        }
                     }
                 }
+                .padding(.horizontal, 14)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Theme.border, lineWidth: 1)
+                )
             }
         }
-        .padding()
-        .padding(.top, 8)
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
     }
 
     private var searchResultsView: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("\(searchResults.count) resultaten")
-                    .font(.caption)
-                    .foregroundStyle(Theme.textSecondary)
+                Text("\(searchResults.count) \(L.results)")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.inkMute)
                 Spacer()
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 20)
             .padding(.top, 16)
 
             if searchResults.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 40))
-                        .foregroundStyle(Theme.textTertiary)
-                    Text("Geen resultaten")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text("Probeer een andere zoekterm")
-                        .font(.caption)
-                        .foregroundStyle(Theme.textSecondary)
+                VStack(spacing: 8) {
+                    Text("\u{1F50D}")
+                        .font(.system(size: 56))
+                        .padding(.bottom, 8)
+                    Text(L.noResults)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+                    Text(L.tryDifferent)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.inkMute)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 60)
@@ -179,7 +195,7 @@ struct SearchView: View {
                 MasonryGrid(items: searchResults) { item in
                     selectedItem = item
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
             }
         }
     }

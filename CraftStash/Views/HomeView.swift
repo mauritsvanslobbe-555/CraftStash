@@ -50,36 +50,7 @@ struct HomeView: View {
                     mainContentView
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("CraftStash")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            showingImportSheet = true
-                        } label: {
-                            Label("Link toevoegen", systemImage: "link.badge.plus")
-                        }
-                        Button {
-                            showingImagePicker = true
-                        } label: {
-                            Label("Screenshot opslaan", systemImage: "photo.on.rectangle.angled")
-                        }
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(Theme.primaryColor)
-                    }
-                }
-            }
-            .toolbarBackground(Theme.bg, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .searchable(text: $searchText, prompt: "Zoek in je stash...")
+            .navigationBarHidden(true)
             .sheet(item: $selectedItem) { item in
                 CraftItemDetailView(item: item)
             }
@@ -96,39 +67,172 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Main Content
-    private var mainContentView: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                // Welcome banner
-                if !hasSeenWelcome {
-                    welcomeBanner
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
+    // MARK: - Header
+    private var headerView: some View {
+        HStack {
+            // Left: avatar + greeting
+            HStack(spacing: 10) {
+                // Gradient avatar circle
+                Circle()
+                    .fill(Theme.accentGradient)
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Text("S")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                    )
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("JOUW STASH")
+                        .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.inkDim)
+                        .tracking(1)
+                    Text("Hoi")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                }
+            }
+
+            Spacer()
+
+            // Right: language flag + stash button
+            HStack(spacing: 8) {
+                // Language flag
+                Button {
+                    // Toggle language
+                    let lang = LanguageManager.shared
+                    lang.current = lang.current == .nl ? .en : .nl
+                } label: {
+                    Text(LanguageManager.shared.current.flag)
+                        .font(.system(size: 14))
+                        .frame(width: 32, height: 32)
+                        .background(Theme.surface)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Theme.border, lineWidth: 1)
+                        )
                 }
 
-                // Stats
-                HStack {
-                    Text("\(items.count) items opgeslagen")
-                        .font(.caption)
-                        .foregroundStyle(Theme.textSecondary)
-                    Spacer()
+                // + Stash button
+                Menu {
+                    Button {
+                        showingImportSheet = true
+                    } label: {
+                        Label(L.addLink, systemImage: "link.badge.plus")
+                    }
+                    Button {
+                        showingImagePicker = true
+                    } label: {
+                        Label(L.saveScreenshot, systemImage: "photo.on.rectangle.angled")
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Stash")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .frame(height: 32)
+                    .background(Theme.primary)
+                    .clipShape(Capsule())
                 }
-                .padding(.horizontal)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+
+    // MARK: - Search Bar
+    private var searchBarView: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15))
+                .foregroundStyle(Theme.inkMute)
+
+            TextField("", text: $searchText, prompt: Text(L.searchPlaceholder).foregroundStyle(Theme.inkMute))
+                .font(.system(size: 14.5))
+                .foregroundStyle(Theme.ink)
+                .tint(Theme.primary)
+
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.inkDim)
+                }
+            }
+        }
+        .frame(height: 44)
+        .padding(.horizontal, 16)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(Theme.border, lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Main Content
+    private var mainContentView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                headerView
+
+                searchBarView
+                    .padding(.top, 14)
+
+                // Tip card
+                if !hasSeenWelcome {
+                    tipCard
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+                }
+
+                // Stats row
+                HStack {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(items.count)")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(Theme.ink)
+                        Text(L.itemsCount)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.inkMute)
+                    }
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Image(systemName: "line.3.horizontal.decrease")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.inkDim)
+                        Text("NIEUWSTE")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.inkDim)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
                 .padding(.bottom, 8)
 
                 // Filter chips
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         ForEach(filters, id: \.self) { filter in
-                            FilterChip(label: filter, isActive: activeFilter == filter) {
+                            SSFilterChip(
+                                label: filter,
+                                isActive: activeFilter == filter,
+                                platformColor: platformDotColor(for: filter)
+                            ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     activeFilter = filter
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                     .padding(.vertical, 4)
                 }
                 .padding(.bottom, 12)
@@ -137,193 +241,129 @@ struct HomeView: View {
                 MasonryGrid(items: filteredItems) { item in
                     selectedItem = item
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
             }
             .padding(.top, 8)
         }
     }
 
-    // MARK: - Welcome Banner
-    private var welcomeBanner: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundStyle(.yellow)
-                Text("Tip: Zo bewaar je ideeën")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.white)
-                Spacer()
-                Button {
-                    withAnimation { hasSeenWelcome = true }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Theme.textTertiary)
-                }
-            }
-            Text("Zie je een leuk knutselfilmpje of -plaatje? Tik op de deel-knop en kies CraftStash!")
-                .font(.caption)
-                .foregroundStyle(Theme.textSecondary)
-        }
-        .padding()
-        .background(Theme.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
+    // MARK: - Tip Card
+    private var tipCard: some View {
+        HStack(spacing: 12) {
+            // Bolt icon
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Theme.borderColor, lineWidth: 1)
-        )
-    }
-
-    // MARK: - Onboarding (shown until first item is saved)
-    private var emptyStateView: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Hero
-                VStack(spacing: 8) {
-                    Text("✨")
-                        .font(.system(size: 40))
-                    Text("Welkom bij CraftStash!")
-                        .font(.title2.bold())
+                .fill(.white.opacity(0.25))
+                .frame(width: 38, height: 38)
+                .overlay(
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 16))
                         .foregroundStyle(.white)
-                    Text("Bewaar al je knutselideeën\nop één plek.")
-                        .font(.callout)
-                        .foregroundStyle(.white.opacity(0.85))
-                        .multilineTextAlignment(.center)
-                }
-                .padding(28)
-                .frame(maxWidth: .infinity)
-                .background(Theme.accentGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
+                )
 
-                // Steps
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("ZO WERKT HET")
-                        .font(.caption.bold())
-                        .foregroundStyle(Theme.textSecondary)
-                        .tracking(0.5)
-                        .padding(.horizontal)
-
-                    onboardingStep(
-                        num: "1",
-                        icon: "square.and.arrow.up",
-                        title: "Zie een leuk knutselidee",
-                        desc: "Op YouTube, Instagram, TikTok, Pinterest of waar dan ook."
-                    )
-                    onboardingStep(
-                        num: "2",
-                        icon: "arrowshape.turn.up.right.fill",
-                        title: "Tik op de deel-knop",
-                        desc: "Kies 'CraftStash' in het deelmenu. Je kunt ook screenshots of foto's delen!"
-                    )
-                    onboardingStep(
-                        num: "3",
-                        icon: "checkmark.circle.fill",
-                        title: "Opgeslagen!",
-                        desc: "Je knutselidee staat veilig in CraftStash. Organiseer het in mappen en bekijk het wanneer je wilt."
-                    )
-                }
-
-                // Supported platforms
-                VStack(spacing: 12) {
-                    Text("WERKT MET")
-                        .font(.caption.bold())
-                        .foregroundStyle(Theme.textSecondary)
-                        .tracking(0.5)
-
-                    HStack(spacing: 20) {
-                        PlatformBadge(name: "YouTube", color: .red)
-                        PlatformBadge(name: "Instagram", color: .purple)
-                        PlatformBadge(name: "TikTok", color: Theme.color(for: "sky"))
-                        PlatformBadge(name: "Pinterest", color: Theme.color(for: "berry"))
-                    }
-
-                    Text("En alle andere apps met een deel-knop!")
-                        .font(.caption)
-                        .foregroundStyle(Theme.textTertiary)
-                }
-                .padding(.vertical, 8)
-
-                // CTA buttons
-                VStack(spacing: 12) {
-                    Button {
-                        showingImportSheet = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "link.badge.plus")
-                            Text("Link toevoegen")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Theme.accentGradient)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    Button {
-                        showingImagePicker = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "photo.on.rectangle.angled")
-                            Text("Screenshot opslaan")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Theme.surface2)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Theme.borderColor, lineWidth: 1)
-                        )
-                    }
-                }
-                .padding(.horizontal)
-
-                Spacer(minLength: 32)
-            }
-            .padding(.top, 8)
-        }
-    }
-
-    private func onboardingStep(num: String, icon: String, title: String, desc: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Theme.primaryColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                Image(systemName: icon)
-                    .foregroundStyle(Theme.primaryColor)
-            }
-            .overlay(alignment: .topTrailing) {
-                Text(num)
-                    .font(.system(size: 10, weight: .bold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L.tipTitle)
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 18, height: 18)
-                    .background(Theme.primaryColor)
-                    .clipShape(Circle())
-                    .offset(x: 4, y: -4)
+                    .lineLimit(2)
+                Text(L.tipDesc)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(2)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.white)
-                Text(desc)
-                    .font(.caption)
-                    .foregroundStyle(Theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            Button {
+                withAnimation { hasSeenWelcome = true }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
             }
         }
         .padding(14)
-        .background(Theme.surface1)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadiusSm)
-                .stroke(Theme.borderColor, lineWidth: 1)
-        )
-        .padding(.horizontal)
+        .background(Theme.warmGradient)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    // MARK: - Empty State
+    private var emptyStateView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                headerView
+                searchBarView
+                    .padding(.top, 14)
+
+                Spacer(minLength: 60)
+
+                VStack(spacing: 8) {
+                    // Dashed box with inbox icon
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Theme.primaryTint, .clear],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 120, height: 120)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 30)
+                                    .strokeBorder(Theme.borderHi, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                            )
+
+                        Image(systemName: "tray.and.arrow.down")
+                            .font(.system(size: 40))
+                            .foregroundStyle(Theme.primarySoft)
+                    }
+                    .padding(.bottom, 16)
+
+                    Text("Jouw stash is leeg")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+
+                    Text("Bewaar je eerste idee vanuit Instagram, TikTok of een andere app -- tik op delen \u{2192} StuffStash.")
+                        .font(.system(size: 13.5))
+                        .foregroundStyle(Theme.inkMute)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 260)
+                        .lineSpacing(2)
+
+                    Button {
+                        showingImportSheet = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 12))
+                            Text("Toon mij hoe")
+                                .font(.system(size: 14, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 22)
+                        .frame(height: 46)
+                        .background(Theme.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: Theme.primary.opacity(0.4), radius: 12, y: 4)
+                    }
+                    .padding(.top, 18)
+                }
+
+                Spacer(minLength: 60)
+            }
+            .padding(.top, 8)
+        }
+    }
+
+    // MARK: - Helpers
+    private func platformDotColor(for filter: String) -> Color? {
+        switch filter {
+        case "YouTube":    return Theme.ytRed
+        case "Instagram":  return Theme.igPink
+        case "TikTok":     return Theme.ttCyan
+        case "Pinterest":  return Theme.pinRed
+        default: return nil
+        }
     }
 
     // MARK: - Import Functions
@@ -339,7 +379,7 @@ struct HomeView: View {
                     try? data.write(to: fileURL)
 
                     let item = CraftItem(
-                        title: "Screenshot knutselidee",
+                        title: L.screenshotTitle,
                         urlString: fileURL.absoluteString,
                         thumbnailURLString: fileURL.absoluteString,
                         sourcePlatform: "Screenshot"
@@ -360,13 +400,11 @@ struct HomeView: View {
         let pending = SharedDataManager.loadPendingItems()
         guard !pending.isEmpty else { return }
 
-        // Collect items that need background thumbnail fetching
         var itemsNeedingThumbnails: [(CraftItem, String)] = []
 
         for shared in pending {
             var thumbnailURL: String? = Self.generateThumbnailURL(for: shared.urlString)
 
-            // If shared item has an image file, copy it and use as thumbnail
             if let imageFileName = shared.imageFileName,
                let sharedImageURL = SharedDataManager.sharedImageURL(for: imageFileName) {
                 let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -378,14 +416,13 @@ struct HomeView: View {
             }
 
             let item = CraftItem(
-                title: shared.title ?? "Knutselidee",
+                title: shared.title ?? L.defaultItemTitle,
                 urlString: shared.urlString,
                 thumbnailURLString: thumbnailURL,
                 sourcePlatform: shared.sourcePlatform
             )
             modelContext.insert(item)
 
-            // Queue items without a thumbnail for background fetching
             if thumbnailURL == nil {
                 itemsNeedingThumbnails.append((item, shared.urlString))
             }
@@ -394,7 +431,6 @@ struct HomeView: View {
         SharedDataManager.clearPendingItems()
         try? modelContext.save()
 
-        // Fetch thumbnails in the background for items that don't have one yet
         if !itemsNeedingThumbnails.isEmpty {
             let thumbnailRequests = itemsNeedingThumbnails.map { (item, urlString) in
                 (item.persistentModelID, urlString)
@@ -449,20 +485,23 @@ struct MasonryGrid: View {
     let items: [CraftItem]
     let onItemClick: (CraftItem) -> Void
 
+    private let heights: [CGFloat] = [200, 160, 170, 220, 180, 210, 170, 200, 230, 170]
+
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            LazyVStack(spacing: 10) {
-                ForEach(leftColumn) { item in
-                    CraftItemCard(item: item, style: .grid)
+        HStack(alignment: .top, spacing: 8) {
+            LazyVStack(spacing: 8) {
+                ForEach(Array(leftColumn.enumerated()), id: \.element.id) { index, item in
+                    CraftItemCard(item: item, height: heights[safe: index * 2] ?? 180)
                         .onTapGesture { onItemClick(item) }
                 }
             }
-            LazyVStack(spacing: 10) {
-                ForEach(rightColumn) { item in
-                    CraftItemCard(item: item, style: .grid)
+            LazyVStack(spacing: 8) {
+                ForEach(Array(rightColumn.enumerated()), id: \.element.id) { index, item in
+                    CraftItemCard(item: item, height: heights[safe: index * 2 + 1] ?? 170)
                         .onTapGesture { onItemClick(item) }
                 }
             }
+            .padding(.top, 24)
         }
     }
 
@@ -475,25 +514,39 @@ struct MasonryGrid: View {
     }
 }
 
-// MARK: - Filter Chip
-struct FilterChip: View {
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
+// MARK: - Filter Chip (redesigned)
+struct SSFilterChip: View {
     let label: String
     let isActive: Bool
+    var platformColor: Color? = nil
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(.subheadline.weight(.medium))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(isActive ? Theme.primaryColor : Theme.surface2)
-                .foregroundStyle(isActive ? .white : Theme.textSecondary)
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(isActive ? Theme.primaryColor : Theme.borderColor, lineWidth: 1)
-                )
+            HStack(spacing: 6) {
+                if let color = platformColor, !isActive {
+                    Circle()
+                        .fill(color)
+                        .frame(width: 7, height: 7)
+                }
+                Text(label)
+                    .font(.system(size: 13, weight: isActive ? .semibold : .medium))
+            }
+            .foregroundStyle(isActive ? .white : Theme.ink)
+            .padding(.horizontal, 14)
+            .frame(height: 34)
+            .background(isActive ? Theme.primary : Theme.surface)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(isActive ? Theme.primary : Theme.border, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -508,10 +561,10 @@ struct PlatformBadge: View {
         VStack(spacing: 4) {
             Circle()
                 .fill(color)
-                .frame(width: 12, height: 12)
+                .frame(width: 14, height: 14)
             Text(name)
-                .font(.caption2)
-                .foregroundStyle(Theme.textSecondary)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Theme.inkMute)
         }
     }
 }

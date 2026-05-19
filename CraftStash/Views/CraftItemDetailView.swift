@@ -12,222 +12,364 @@ struct CraftItemDetailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Theme.bg.ignoresSafeArea()
+                // Dimmed background
+                Theme.bg.opacity(0.65).ignoresSafeArea()
+                    .background(.ultraThinMaterial)
 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Thumbnail / Preview
-                        ZStack {
-                            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                                .fill(Theme.surface2)
-                                .frame(height: 240)
+                // Bottom sheet
+                VStack(spacing: 0) {
+                    Spacer(minLength: 100)
 
-                            if let thumbnailURL = item.thumbnailURL, thumbnailURL.isFileURL {
-                                if let data = try? Data(contentsOf: thumbnailURL),
-                                   let uiImage = UIImage(data: data) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(height: 240)
-                                        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
-                                }
-                            } else if let thumbnailURL = item.thumbnailURL {
-                                AsyncImage(url: thumbnailURL) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(height: 240)
-                                        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
-                                } placeholder: {
-                                    ProgressView()
-                                        .tint(.white)
-                                }
-                            } else {
-                                VStack(spacing: 8) {
-                                    Image(systemName: item.isVideo ? "play.circle.fill" : "photo.fill")
-                                        .font(.system(size: 48))
-                                        .foregroundStyle(Theme.primaryColor)
-                                    Text(item.sourcePlatform)
-                                        .font(.caption)
-                                        .foregroundStyle(Theme.textSecondary)
-                                }
-                            }
+                    VStack(spacing: 0) {
+                        // Handle bar
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Theme.inkFaint)
+                            .frame(width: 36, height: 4)
+                            .padding(.top, 12)
+                            .padding(.bottom, 14)
 
-                            if item.isVideo {
-                                Image(systemName: "play.circle.fill")
-                                    .font(.system(size: 56))
-                                    .foregroundStyle(.white)
-                                    .shadow(radius: 4)
-                            }
-                        }
-                        .onTapGesture {
-                            if let url = item.url, !url.isFileURL {
-                                UIApplication.shared.open(url)
-                            }
-                        }
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                // Preview image
+                                previewImage
+                                    .padding(.horizontal, 20)
 
-                        // Info
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(item.title)
-                                .font(.title2.bold())
-                                .foregroundStyle(.white)
+                                // Title + meta
+                                titleSection
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 16)
 
-                            HStack {
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(Theme.platformColor(for: item.sourcePlatform))
-                                        .frame(width: 8, height: 8)
-                                    Text(item.sourcePlatform)
-                                        .font(.subheadline)
-                                        .foregroundStyle(Theme.textSecondary)
-                                }
+                                // Tags
+                                tagsSection
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 14)
 
-                                Spacer()
+                                // Open button
+                                openButton
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 18)
 
-                                Text(item.dateAdded, style: .date)
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.textTertiary)
-                            }
+                                // Action buttons
+                                actionButtons
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 10)
 
-                            Divider().overlay(Theme.borderColor)
+                                // Notes
+                                notesSection
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 14)
 
-                            // Actions
-                            HStack(spacing: 24) {
-                                actionButton(
-                                    icon: item.isFavorite ? "heart.fill" : "heart",
-                                    label: "Favoriet",
-                                    color: Theme.danger,
-                                    isActive: item.isFavorite
-                                ) {
-                                    item.isFavorite.toggle()
-                                }
-
-                                actionButton(
-                                    icon: "folder.badge.plus",
-                                    label: "Collectie",
-                                    color: Theme.primaryColor
-                                ) {
-                                    showingCollectionPicker = true
-                                }
-
-                                actionButton(
-                                    icon: "square.and.arrow.up",
-                                    label: "Deel",
-                                    color: Theme.success
-                                ) {
-                                    shareItem()
-                                }
-
-                                if let url = item.url, !url.isFileURL {
-                                    Link(destination: url) {
-                                        VStack(spacing: 4) {
-                                            Image(systemName: "arrow.up.right.square")
-                                                .font(.title3)
-                                                .foregroundStyle(Theme.accentLight)
-                                            Text("Open")
-                                                .font(.caption2)
-                                                .foregroundStyle(Theme.textSecondary)
-                                        }
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-
-                            Divider().overlay(Theme.borderColor)
-
-                            // Notes
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Notities")
-                                        .font(.headline)
-                                        .foregroundStyle(.white)
-                                    Spacer()
-                                    Button(isEditingNotes ? "Klaar" : "Bewerk") {
-                                        isEditingNotes.toggle()
-                                    }
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryColor)
-                                }
-
-                                if isEditingNotes {
-                                    TextField("Voeg notities toe...", text: Binding(
-                                        get: { item.notes ?? "" },
-                                        set: { item.notes = $0.isEmpty ? nil : $0 }
-                                    ), axis: .vertical)
-                                    .padding(12)
-                                    .background(Theme.surface2)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(3...6)
-                                } else {
-                                    Text(item.notes ?? "Geen notities")
-                                        .font(.body)
-                                        .foregroundStyle(item.notes == nil ? Theme.textTertiary : .white)
-                                }
-                            }
-
-                            // Collections
-                            if let itemCollections = item.collections, !itemCollections.isEmpty {
-                                Divider().overlay(Theme.borderColor)
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("In collecties")
-                                        .font(.headline)
-                                        .foregroundStyle(.white)
-                                    FlowLayout(spacing: 8) {
-                                        ForEach(itemCollections) { collection in
-                                            HStack(spacing: 4) {
-                                                Image(systemName: collection.icon)
-                                                Text(collection.name)
-                                            }
-                                            .font(.caption)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
-                                            .background(Theme.color(for: collection.colorName).opacity(0.15))
-                                            .foregroundStyle(Theme.color(for: collection.colorName))
-                                            .clipShape(Capsule())
-                                        }
-                                    }
-                                }
+                                // Delete button
+                                deleteButton
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 20)
+                                    .padding(.bottom, 32)
                             }
                         }
-                        .padding(.horizontal)
                     }
-                    .padding(.bottom, 32)
+                    .background(Theme.surfaceLo)
+                    .clipShape(
+                        RoundedCornerShape(radius: 28, corners: [.topLeft, .topRight])
+                    )
+                    .overlay(alignment: .top) {
+                        RoundedCornerShape(radius: 28, corners: [.topLeft, .topRight])
+                            .stroke(Theme.borderHi, lineWidth: 1)
+                            .frame(height: 1)
+                    }
+                    .shadow(color: .black.opacity(0.5), radius: 30, y: -10)
                 }
             }
-            .navigationTitle("Detail")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-                }
-            }
+            .navigationBarHidden(true)
             .sheet(isPresented: $showingCollectionPicker) {
                 CollectionPickerSheet(item: item)
             }
         }
     }
 
-    private func actionButton(
-        icon: String,
-        label: String,
-        color: Color,
-        isActive: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(isActive ? color : Theme.textSecondary)
-                Text(label)
-                    .font(.caption2)
-                    .foregroundStyle(Theme.textSecondary)
+    // MARK: - Preview Image
+    private var previewImage: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Theme.surface)
+                .frame(height: 220)
+
+            if let thumbnailURL = item.thumbnailURL, thumbnailURL.isFileURL {
+                if let data = try? Data(contentsOf: thumbnailURL),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                }
+            } else if let thumbnailURL = item.thumbnailURL {
+                AsyncImage(url: thumbnailURL) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                } placeholder: {
+                    ProgressView()
+                        .tint(.white)
+                }
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: item.isVideo ? "play.circle.fill" : "photo.fill")
+                        .font(.system(size: 42))
+                        .foregroundStyle(Theme.primarySoft)
+                    Text(item.sourcePlatform)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.inkMute)
+                }
             }
+
+            // Play overlay for video
+            if item.isVideo {
+                Circle()
+                    .fill(.black.opacity(0.5))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white)
+                    )
+            }
+
+            // Platform badge top-left
+            VStack {
+                HStack {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Theme.platformColor(for: item.sourcePlatform))
+                            .frame(width: 12, height: 12)
+                        Text(item.sourcePlatform)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.black.opacity(0.55))
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    Spacer()
+                }
+                Spacer()
+            }
+            .padding(12)
+        }
+        .frame(height: 220)
+        .onTapGesture {
+            if let url = item.url, !url.isFileURL {
+                UIApplication.shared.open(url)
+            }
+        }
+    }
+
+    // MARK: - Title Section
+    private var titleSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(item.title)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(Theme.ink)
+                .lineSpacing(1)
+
+            HStack(spacing: 6) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.inkDim)
+                Text(item.dateAdded, style: .date)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.inkMute)
+
+                if let itemCollections = item.collections, let first = itemCollections.first {
+                    Text("\u{00B7}")
+                        .foregroundStyle(Theme.inkMute)
+                    Text("uit \(first.name)")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.inkMute)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Tags Section
+    private var tagsSection: some View {
+        FlowLayout(spacing: 6) {
+            if let itemCollections = item.collections {
+                ForEach(itemCollections) { collection in
+                    HStack(spacing: 4) {
+                        Image(systemName: collection.icon)
+                            .font(.system(size: 10))
+                        Text(collection.name)
+                    }
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.inkMute)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Theme.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Theme.border, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+    }
+
+    // MARK: - Open Button
+    private var openButton: some View {
+        Group {
+            if let url = item.url, !url.isFileURL {
+                Link(destination: url) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 15))
+                        Text("Open op \(item.sourcePlatform)")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Theme.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: Theme.primary.opacity(0.4), radius: 12, y: 4)
+                }
+            }
+        }
+    }
+
+    // MARK: - Action Buttons
+    private var actionButtons: some View {
+        HStack(spacing: 8) {
+            // Favorite
+            actionCard(
+                icon: item.isFavorite ? "heart.fill" : "heart",
+                label: L.favorite,
+                color: Theme.rose,
+                isActive: item.isFavorite
+            ) {
+                item.isFavorite.toggle()
+            }
+
+            // Collection
+            actionCard(
+                icon: "folder.badge.plus",
+                label: L.collection,
+                color: Theme.primarySoft
+            ) {
+                showingCollectionPicker = true
+            }
+
+            // Share
+            actionCard(
+                icon: "square.and.arrow.up",
+                label: L.share,
+                color: Theme.warm
+            ) {
+                shareItem()
+            }
+        }
+    }
+
+    private func actionCard(icon: String, label: String, color: Color, isActive: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(isActive ? color : color)
+                Text(label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Theme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Notes Section
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.inkMute)
+                    Text("NOTITIE")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.inkDim)
+                        .tracking(1)
+                }
+                Spacer()
+                Button {
+                    isEditingNotes.toggle()
+                } label: {
+                    Image(systemName: "pencil.line")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.primarySoft)
+                }
+            }
+
+            if isEditingNotes {
+                TextField(L.addNotes, text: Binding(
+                    get: { item.notes ?? "" },
+                    set: { item.notes = $0.isEmpty ? nil : $0 }
+                ), axis: .vertical)
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.ink)
+                .lineLimit(3...6)
+                .padding(12)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Theme.border, lineWidth: 1)
+                )
+            } else {
+                Text(item.notes ?? L.noNotes)
+                    .font(.system(size: 13))
+                    .foregroundStyle(item.notes == nil ? Theme.inkDim : Theme.ink)
+                    .lineSpacing(3)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Theme.border, lineWidth: 1)
+                    )
+            }
+        }
+    }
+
+    // MARK: - Delete Button
+    private var deleteButton: some View {
+        Button {
+            modelContext.delete(item)
+            dismiss()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "trash")
+                    .font(.system(size: 13))
+                Text(L.deleteItem)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(Theme.coral)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Theme.coral.opacity(0.3), lineWidth: 1)
+            )
         }
     }
 
@@ -242,6 +384,21 @@ struct CraftItemDetailView: View {
            let rootVC = window.rootViewController {
             rootVC.present(activityVC, animated: true)
         }
+    }
+}
+
+// MARK: - Rounded Corner Shape (for top-only rounding)
+struct RoundedCornerShape: Shape {
+    var radius: CGFloat
+    var corners: UIRectCorner
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }
 
