@@ -17,85 +17,61 @@ workflows:
         script: |
           brew install xcodegen
 
-      - name: Set up code signing
+      - name: Generate Xcode project
         script: |
+          cd $CM_BUILD_DIR
+          xcodegen generate
+
+      - name: Find API key and set up signing
+        script: |
+          echo "=== Looking for API key files ==="
+          ls -la ~/private_keys/ 2>/dev/null || echo "No ~/private_keys"
+          ls -la $HOME/private_keys/ 2>/dev/null || echo "No HOME/private_keys"
+          find / -name "AuthKey_*.p8" 2>/dev/null | head -5 || echo "No AuthKey found"
+          find / -name "*.p8" 2>/dev/null | head -5 || echo "No .p8 found"
+          echo "=== App Store Connect env vars ==="
+          echo "KEY_ID: $APP_STORE_CONNECT_KEY_IDENTIFIER"
+          echo "ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID"
+          echo "PRIVATE_KEY var length: ${#APP_STORE_CONNECT_PRIVATE_KEY}"
+          echo "PRIVATE_KEY first 50 chars: $(echo "$APP_STORE_CONNECT_PRIVATE_KEY" | head -c 50)"
+          echo "=== Try writing key with printf ==="
+          mkdir -p ~/private_keys
+          printf '%s\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/private_keys/AuthKey.p8
+          echo "Key file size: $(wc -c < ~/private_keys/AuthKey.p8)"
+          head -2 ~/private_keys/AuthKey.p8
+          echo "=== Keychain and cert setup ==="
           keychain initialize
           openssl genrsa -out ~/cert_key.pem 2048
           export CM_CERTIFICATE_PRIVATE_KEY="$(cat ~/cert_key.pem)"
           app-store-connect fetch-signing-files "com.craftstash.app" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.craftstash.app.share-extension" --type IOS_APP_STORE --create
           keychain add-certificates
-
-          # Debug: list all profiles
-          echo "=== Profiles directory ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles"
-
-          # Extract profile names using plistutil-style parsing
+          echo "=== Installed profiles ==="
           for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
-            echo "=== Processing: $(basename "$f") ==="
-            security cms -D -i "$f" > /tmp/profile_info.plist 2>/dev/null
-            NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile_info.plist 2>/dev/null)
-            UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile_info.plist 2>/dev/null)
-            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/profile_info.plist 2>/dev/null)
-            BUNDLE="${APPID#*.}"
-            echo "  Name: $NAME"
-            echo "  UUID: $UUID"
-            echo "  AppID: $APPID"
-            echo "  Bundle: $BUNDLE"
-            if [ "$BUNDLE" = "com.craftstash.app" ]; then
-              echo "APP_PROFILE=$NAME" >> $CM_ENV
-              echo "APP_UUID=$UUID" >> $CM_ENV
-            elif [ "$BUNDLE" = "com.craftstash.app.share-extension" ]; then
-              echo "EXT_PROFILE=$NAME" >> $CM_ENV
-              echo "EXT_UUID=$UUID" >> $CM_ENV
-            fi
+            security cms -D -i "$f" > /tmp/pinfo.plist 2>/dev/null
+            NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pinfo.plist 2>/dev/null)
+            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/pinfo.plist 2>/dev/null)
+            GROUPS=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.security.application-groups" /tmp/pinfo.plist 2>/dev/null)
+            echo "Profile: $NAME | AppID: $APPID | Groups: $GROUPS"
           done
+          echo "=== Signing identities ==="
+          security find-identity -v -p codesigning
 
-          # Get signing identity
-          IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution" | head -1 | sed 's/.*"\(.*\)"/\1/')
-          echo "SIGN_IDENTITY=$IDENTITY" >> $CM_ENV
-          echo "=== Signing identity: $IDENTITY ==="
-
-      - name: Generate Xcode project
+      - name: Apply signing to project
         script: |
           cd $CM_BUILD_DIR
-          xcodegen generate
-
-      - name: Apply signing to Xcode project
-        script: |
-          cd $CM_BUILD_DIR
-          echo "Using profiles: APP=$APP_PROFILE, EXT=$EXT_PROFILE, IDENTITY=$SIGN_IDENTITY"
-          ruby << 'RUBYEOF'
-          require 'xcodeproj'
-          project = Xcodeproj::Project.open('CraftStash.xcodeproj')
-          app_profile = ENV['APP_PROFILE'] || ''
-          ext_profile = ENV['EXT_PROFILE'] || ''
-          identity = ENV['SIGN_IDENTITY'] || 'Apple Distribution'
-          puts "Setting app profile: #{app_profile}"
-          puts "Setting ext profile: #{ext_profile}"
-          puts "Setting identity: #{identity}"
-          project.targets.each do |target|
-            target.build_configurations.each do |config|
-              config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
-              config.build_settings['DEVELOPMENT_TEAM'] = '9959PXX99M'
-              config.build_settings['CODE_SIGN_IDENTITY'] = identity
-              if target.name == 'CraftStash'
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = app_profile
-              elsif target.name == 'CraftStashShareExtension'
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ext_profile
-              end
-            end
-          end
-          project.save
-          puts "Project saved with signing settings"
-          RUBYEOF
-
-          echo "=== Verify signing in pbxproj ==="
-          grep "PROVISIONING_PROFILE_SPECIFIER" CraftStash.xcodeproj/project.pbxproj || echo "NOT FOUND"
+          gem list xcodeproj 2>/dev/null || echo "xcodeproj gem not found"
+          which ruby && ruby --version
+          ruby -e "require 'xcodeproj'; puts 'xcodeproj gem OK'" 2>/dev/null || echo "CANNOT LOAD xcodeproj gem"
+          echo "=== Trying xcode-project use-profiles ==="
+          xcode-project use-profiles --project CraftStash.xcodeproj 2>&1 || echo "use-profiles failed"
+          echo "=== Check result ==="
+          grep "PROVISIONING_PROFILE_SPECIFIER" CraftStash.xcodeproj/project.pbxproj || echo "NO PROFILE SPECIFIER SET"
 
       - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
+          echo "=== Attempting build ==="
           xcodebuild archive \
             -project CraftStash.xcodeproj \
             -scheme CraftStash \
@@ -104,33 +80,9 @@ workflows:
             -archivePath build/CraftStash.xcarchive \
             DEVELOPMENT_TEAM=9959PXX99M
 
-          cat > /tmp/exportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>teamID</key>
-            <string>9959PXX99M</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>uploadSymbols</key>
-            <true/>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.craftstash.app</key>
-              <string>${APP_PROFILE}</string>
-              <key>com.craftstash.app.share-extension</key>
-              <string>${EXT_PROFILE}</string>
-            </dict>
-          </dict>
-          </plist>
-          EOF
-
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
-            -exportOptionsPlist /tmp/exportOptions.plist \
+            -exportOptionsPlist exportOptions.plist \
             -exportPath build/ipa
 
     artifacts:
