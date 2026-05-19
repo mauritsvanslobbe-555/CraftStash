@@ -6,11 +6,9 @@
     <string>app-store-connect</string>
     <key>teamID</key>
     <string>9959PXX99M</string>
-    <key>uploadBitcode</key>
-    <false/>
     <key>uploadSymbols</key>
     <true/>
     <key>signingStyle</key>
-    <string>manual</string>
+    <string>automatic</string>
 </dict>
 </plist>
