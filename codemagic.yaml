@@ -36,7 +36,19 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
-          xcode-project use-profiles
+          # Debug: list profiles
+          echo "=== Installed profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles dir"
+          for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            echo "--- Profile: $(basename $f) ---"
+            security cms -D -i "$f" 2>/dev/null | grep -E "<key>(Name|TeamIdentifier|application-identifier)" -A1 | head -12
+          done
+          # Apply profiles and auto-generate export options
+          xcode-project use-profiles --export-options-plist "$CM_BUILD_DIR/exportOptions.plist"
+          echo "=== exportOptions.plist ==="
+          cat "$CM_BUILD_DIR/exportOptions.plist"
+          echo "=== Project PROVISIONING_PROFILE settings ==="
+          grep -A2 "PROVISIONING_PROFILE" "$CM_BUILD_DIR/CraftStash.xcodeproj/project.pbxproj" | head -20 || true
 
       - name: Build IPA
         script: |
@@ -47,8 +59,7 @@ workflows:
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath build/CraftStash.xcarchive \
-            DEVELOPMENT_TEAM=9959PXX99M \
-            -allowProvisioningUpdates
+            DEVELOPMENT_TEAM=9959PXX99M
 
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
