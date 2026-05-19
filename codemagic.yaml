@@ -8,10 +8,6 @@ workflows:
       app_store_connect: CodeMagic1
 
     environment:
-      ios_signing:
-        provisioning_profiles:
-          - craftstash_appstore_v2
-          - craftstash_share_extension_appstore_v2
       vars:
         XCODE_SCHEME: "CraftStash"
       xcode: 26.0
