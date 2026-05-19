@@ -10,6 +10,9 @@ workflows:
     environment:
       vars:
         XCODE_SCHEME: "CraftStash"
+        BUNDLE_ID: "com.craftstash.app"
+        EXTENSION_BUNDLE_ID: "com.craftstash.app.share-extension"
+        APP_STORE_APPLE_ID: "6746428527"
       xcode: 26.0
 
     scripts:
@@ -22,44 +25,41 @@ workflows:
           cd $CM_BUILD_DIR
           xcodegen generate
 
-      - name: Build IPA with automatic signing
+      - name: Set up code signing
+        script: |
+          # 1. Initialize a fresh keychain
+          keychain initialize
+
+          # 2. Fetch Distribution certificates + provisioning profiles
+          #    --create will create them if they don't exist yet
+          #    --type IOS_APP_STORE ensures Distribution (not Development)
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+          app-store-connect fetch-signing-files "$EXTENSION_BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+          # 3. Import certificates into the keychain
+          keychain add-certificates
+
+          # 4. Update Xcode project to use the downloaded profiles
+          #    This switches targets to manual signing with correct profiles
+          xcode-project use-profiles
+
+      - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
-          AUTH_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8"
-          echo "Auth key path: $AUTH_KEY_PATH"
-          echo "Key ID: $APP_STORE_CONNECT_KEY_IDENTIFIER"
-          echo "Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
-          ls -la "$AUTH_KEY_PATH"
-
-          xcodebuild archive \
-            -project CraftStash.xcodeproj \
-            -scheme CraftStash \
-            -destination 'generic/platform=iOS' \
-            -configuration Release \
-            -archivePath build/CraftStash.xcarchive \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -allowProvisioningUpdates \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM=9959PXX99M \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            CODE_SIGNING_ALLOWED=YES
-
-          xcodebuild -exportArchive \
-            -archivePath build/CraftStash.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
-            -exportPath build/ipa \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -allowProvisioningUpdates
+          xcode-project build-ipa \
+            --project CraftStash.xcodeproj \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
-      - build/ipa/*.ipa
-      - build/CraftStash.xcarchive
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - build/**/*.ipa
 
     publishing:
       app_store_connect:
