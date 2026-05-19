@@ -22,18 +22,6 @@ workflows:
           cd $CM_BUILD_DIR
           xcodegen generate
 
-      - name: Set up code signing
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "com.craftstash.app" \
-            --type IOS_APP_STORE \
-            --create
-          app-store-connect fetch-signing-files "com.craftstash.app.share-extension" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
-
       - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
@@ -43,13 +31,21 @@ workflows:
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath build/CraftStash.xcarchive \
-            DEVELOPMENT_TEAM=9959PXX99M \
-            -allowProvisioningUpdates
+            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            -allowProvisioningUpdates \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=9959PXX99M
 
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath build/ipa
+            -exportPath build/ipa \
+            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            -allowProvisioningUpdates
 
     artifacts:
       - build/ipa/*.ipa
