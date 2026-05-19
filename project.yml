@@ -25,7 +25,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.craftstash.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: CraftStash/CraftStash.entitlements
-        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: 9959PXX99M
     dependencies:
       - target: CraftStashShareExtension
@@ -41,5 +41,5 @@ targets:
         INFOPLIST_FILE: CraftStashShareExtension/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.craftstash.app.share-extension
         CODE_SIGN_ENTITLEMENTS: CraftStashShareExtension/CraftStashShareExtension.entitlements
-        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: 9959PXX99M

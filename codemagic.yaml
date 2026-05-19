@@ -22,13 +22,21 @@ workflows:
           cd $CM_BUILD_DIR
           xcodegen generate
 
-      - name: Save API key for xcodebuild
+      - name: Set up code signing
         script: |
-          mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/private_keys/AuthKey.p8
-          echo "Key ID: $APP_STORE_CONNECT_KEY_IDENTIFIER"
-          echo "Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
-          ls -la ~/private_keys/
+          keychain initialize
+          # Generate fresh RSA key for certificate creation
+          openssl genrsa -out ~/cert_key.pem 2048
+          export CM_CERTIFICATE_PRIVATE_KEY="$(cat ~/cert_key.pem)"
+          # Fetch or create signing files
+          app-store-connect fetch-signing-files "com.craftstash.app" \
+            --type IOS_APP_STORE \
+            --create
+          app-store-connect fetch-signing-files "com.craftstash.app.share-extension" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Build IPA
         script: |
@@ -39,21 +47,13 @@ workflows:
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath build/CraftStash.xcarchive \
-            -authenticationKeyPath ~/private_keys/AuthKey.p8 \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -allowProvisioningUpdates \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=9959PXX99M
+            DEVELOPMENT_TEAM=9959PXX99M \
+            -allowProvisioningUpdates
 
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath build/ipa \
-            -authenticationKeyPath ~/private_keys/AuthKey.p8 \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -allowProvisioningUpdates
+            -exportPath build/ipa
 
     artifacts:
       - build/ipa/*.ipa
