@@ -22,6 +22,14 @@ workflows:
           cd $CM_BUILD_DIR
           xcodegen generate
 
+      - name: Save API key for xcodebuild
+        script: |
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/private_keys/AuthKey.p8
+          echo "Key ID: $APP_STORE_CONNECT_KEY_IDENTIFIER"
+          echo "Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
+          ls -la ~/private_keys/
+
       - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
@@ -31,7 +39,7 @@ workflows:
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath build/CraftStash.xcarchive \
-            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyPath ~/private_keys/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             -allowProvisioningUpdates \
@@ -42,7 +50,7 @@ workflows:
             -archivePath build/CraftStash.xcarchive \
             -exportOptionsPlist exportOptions.plist \
             -exportPath build/ipa \
-            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyPath ~/private_keys/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             -allowProvisioningUpdates
