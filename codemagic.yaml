@@ -20,98 +20,82 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-          # Generate RSA key for certificate creation
           openssl genrsa -out ~/cert_key.pem 2048
           export CM_CERTIFICATE_PRIVATE_KEY="$(cat ~/cert_key.pem)"
-          # Fetch or create signing files
-          app-store-connect fetch-signing-files "com.craftstash.app" \
-            --type IOS_APP_STORE \
-            --create
-          app-store-connect fetch-signing-files "com.craftstash.app.share-extension" \
-            --type IOS_APP_STORE \
-            --create
+          app-store-connect fetch-signing-files "com.craftstash.app" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "com.craftstash.app.share-extension" --type IOS_APP_STORE --create
           keychain add-certificates
 
-          # Extract profile names and signing identity
-          IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution" | head -1 | sed 's/.*"\(.*\)"/\1/')
-          APP_PROFILE=""
-          EXT_PROFILE=""
+          # Debug: list all profiles
+          echo "=== Profiles directory ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles"
+
+          # Extract profile names using plistutil-style parsing
           for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
-            INFO=$(security cms -D -i "$f" 2>/dev/null)
-            TEAM_BUNDLE=$(echo "$INFO" | grep -A1 "application-identifier" | grep "<string>" | head -1 | sed 's/.*<string>\(.*\)<\/string>/\1/')
-            BUNDLE="${TEAM_BUNDLE#*.}"
-            NAME=$(echo "$INFO" | grep -A1 "<key>Name</key>" | grep "<string>" | head -1 | sed 's/.*<string>\(.*\)<\/string>/\1/')
-            echo "Found profile: $NAME for bundle: $BUNDLE"
+            echo "=== Processing: $(basename "$f") ==="
+            security cms -D -i "$f" > /tmp/profile_info.plist 2>/dev/null
+            NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile_info.plist 2>/dev/null)
+            UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile_info.plist 2>/dev/null)
+            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/profile_info.plist 2>/dev/null)
+            BUNDLE="${APPID#*.}"
+            echo "  Name: $NAME"
+            echo "  UUID: $UUID"
+            echo "  AppID: $APPID"
+            echo "  Bundle: $BUNDLE"
             if [ "$BUNDLE" = "com.craftstash.app" ]; then
-              APP_PROFILE="$NAME"
+              echo "APP_PROFILE=$NAME" >> $CM_ENV
+              echo "APP_UUID=$UUID" >> $CM_ENV
             elif [ "$BUNDLE" = "com.craftstash.app.share-extension" ]; then
-              EXT_PROFILE="$NAME"
+              echo "EXT_PROFILE=$NAME" >> $CM_ENV
+              echo "EXT_UUID=$UUID" >> $CM_ENV
             fi
           done
 
-          echo "App profile: $APP_PROFILE"
-          echo "Ext profile: $EXT_PROFILE"
-          echo "Identity: $IDENTITY"
-
-          # Save for next steps
-          echo "APP_PROFILE=$APP_PROFILE" >> $CM_ENV
-          echo "EXT_PROFILE=$EXT_PROFILE" >> $CM_ENV
+          # Get signing identity
+          IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution" | head -1 | sed 's/.*"\(.*\)"/\1/')
           echo "SIGN_IDENTITY=$IDENTITY" >> $CM_ENV
+          echo "=== Signing identity: $IDENTITY ==="
 
-      - name: Generate Xcode project with signing
+      - name: Generate Xcode project
         script: |
           cd $CM_BUILD_DIR
-          # Inject signing settings into project.yml
-          sed -i '' "/PRODUCT_BUNDLE_IDENTIFIER: com.craftstash.app$/a\\
-          \ \ \ \ \ \ \ \ PROVISIONING_PROFILE_SPECIFIER: $APP_PROFILE\\
-          \ \ \ \ \ \ \ \ CODE_SIGN_IDENTITY: Apple Distribution" project.yml
-
-          sed -i '' "/PRODUCT_BUNDLE_IDENTIFIER: com.craftstash.app.share-extension$/a\\
-          \ \ \ \ \ \ \ \ PROVISIONING_PROFILE_SPECIFIER: $EXT_PROFILE\\
-          \ \ \ \ \ \ \ \ CODE_SIGN_IDENTITY: Apple Distribution" project.yml
-
-          echo "=== Updated project.yml ==="
-          cat project.yml
-
           xcodegen generate
 
+      - name: Apply signing to Xcode project
+        script: |
+          cd $CM_BUILD_DIR
+          echo "Using profiles: APP=$APP_PROFILE, EXT=$EXT_PROFILE, IDENTITY=$SIGN_IDENTITY"
+          ruby << 'RUBYEOF'
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('CraftStash.xcodeproj')
+          app_profile = ENV['APP_PROFILE'] || ''
+          ext_profile = ENV['EXT_PROFILE'] || ''
+          identity = ENV['SIGN_IDENTITY'] || 'Apple Distribution'
+          puts "Setting app profile: #{app_profile}"
+          puts "Setting ext profile: #{ext_profile}"
+          puts "Setting identity: #{identity}"
+          project.targets.each do |target|
+            target.build_configurations.each do |config|
+              config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+              config.build_settings['DEVELOPMENT_TEAM'] = '9959PXX99M'
+              config.build_settings['CODE_SIGN_IDENTITY'] = identity
+              if target.name == 'CraftStash'
+                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = app_profile
+              elsif target.name == 'CraftStashShareExtension'
+                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ext_profile
+              end
+            end
+          end
+          project.save
+          puts "Project saved with signing settings"
+          RUBYEOF
+
           echo "=== Verify signing in pbxproj ==="
-          grep -A2 "PROVISIONING_PROFILE" CraftStash.xcodeproj/project.pbxproj | head -20 || true
+          grep "PROVISIONING_PROFILE_SPECIFIER" CraftStash.xcodeproj/project.pbxproj || echo "NOT FOUND"
 
       - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
-
-          # Write exportOptions.plist with correct profile mapping
-          cat > exportOptions.plist << PLISTEOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>teamID</key>
-              <string>9959PXX99M</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>uploadSymbols</key>
-              <true/>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.craftstash.app</key>
-                  <string>$APP_PROFILE</string>
-                  <key>com.craftstash.app.share-extension</key>
-                  <string>$EXT_PROFILE</string>
-              </dict>
-          </dict>
-          </plist>
-          PLISTEOF
-
-          echo "=== exportOptions.plist ==="
-          cat exportOptions.plist
-
           xcodebuild archive \
             -project CraftStash.xcodeproj \
             -scheme CraftStash \
@@ -120,9 +104,33 @@ workflows:
             -archivePath build/CraftStash.xcarchive \
             DEVELOPMENT_TEAM=9959PXX99M
 
+          cat > /tmp/exportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>9959PXX99M</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.craftstash.app</key>
+              <string>${APP_PROFILE}</string>
+              <key>com.craftstash.app.share-extension</key>
+              <string>${EXT_PROFILE}</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
           xcodebuild -exportArchive \
             -archivePath build/CraftStash.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
+            -exportOptionsPlist /tmp/exportOptions.plist \
             -exportPath build/ipa
 
     artifacts:
