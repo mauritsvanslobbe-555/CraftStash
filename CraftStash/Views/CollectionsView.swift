@@ -32,7 +32,7 @@ struct CollectionsView: View {
                     .font(.system(size: 9.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.inkDim)
                     .tracking(1)
-                Text(L.collectionsTitle)
+                Text("Collecties")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(Theme.ink)
             }
@@ -43,7 +43,7 @@ struct CollectionsView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
-                    Text(L.newItem)
+                    Text("Nieuw")
                         .font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundStyle(.white)
@@ -66,11 +66,11 @@ struct CollectionsView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(Theme.primarySoft)
 
-            Text(L.createFirstCollection)
+            Text("Maak je eerste collectie")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(Theme.ink)
 
-            Text(L.organizeIdeas)
+            Text("Organiseer je ideeën in mappen")
                 .font(.system(size: 13.5))
                 .foregroundStyle(Theme.inkMute)
                 .multilineTextAlignment(.center)
@@ -82,7 +82,7 @@ struct CollectionsView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
-                    Text(L.newCollection)
+                    Text("Nieuwe collectie")
                         .font(.system(size: 14, weight: .bold))
                 }
                 .foregroundStyle(.white)
@@ -106,7 +106,7 @@ struct CollectionsView: View {
 
                 // Stats
                 HStack(spacing: 6) {
-                    Text("\(collections.count) \(L.collectionsCount)")
+                    Text("\(collections.count) \("collecties")")
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.inkMute)
                     Circle()
@@ -128,7 +128,7 @@ struct CollectionsView: View {
                         Button(role: .destructive) {
                             modelContext.delete(first)
                         } label: {
-                            Label(L.delete, systemImage: "trash")
+                            Label("Verwijder", systemImage: "trash")
                         }
                     }
                     .padding(.horizontal, 20)
@@ -145,7 +145,7 @@ struct CollectionsView: View {
                             Button(role: .destructive) {
                                 modelContext.delete(collection)
                             } label: {
-                                Label(L.delete, systemImage: "trash")
+                                Label("Verwijder", systemImage: "trash")
                             }
                         }
                     }
@@ -158,7 +158,7 @@ struct CollectionsView: View {
                             Image(systemName: "plus")
                                 .font(.system(size: 18))
                                 .foregroundStyle(Theme.inkMute)
-                            Text(L.newCollection)
+                            Text("Nieuwe collectie")
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundStyle(Theme.inkMute)
                         }

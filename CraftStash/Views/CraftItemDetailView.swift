@@ -247,7 +247,7 @@ struct CraftItemDetailView: View {
             // Favorite
             actionCard(
                 icon: item.isFavorite ? "heart.fill" : "heart",
-                label: L.favorite,
+                label: "Favoriet",
                 color: Theme.rose,
                 isActive: item.isFavorite
             ) {
@@ -257,7 +257,7 @@ struct CraftItemDetailView: View {
             // Collection
             actionCard(
                 icon: "folder.badge.plus",
-                label: L.collection,
+                label: "Collectie",
                 color: Theme.primarySoft
             ) {
                 showingCollectionPicker = true
@@ -266,7 +266,7 @@ struct CraftItemDetailView: View {
             // Share
             actionCard(
                 icon: "square.and.arrow.up",
-                label: L.share,
+                label: "Delen",
                 color: Theme.warm
             ) {
                 shareItem()
@@ -320,7 +320,7 @@ struct CraftItemDetailView: View {
             }
 
             if isEditingNotes {
-                TextField(L.addNotes, text: Binding(
+                TextField("Voeg een notitie toe...", text: Binding(
                     get: { item.notes ?? "" },
                     set: { item.notes = $0.isEmpty ? nil : $0 }
                 ), axis: .vertical)
@@ -335,7 +335,7 @@ struct CraftItemDetailView: View {
                         .stroke(Theme.border, lineWidth: 1)
                 )
             } else {
-                Text(item.notes ?? L.noNotes)
+                Text(item.notes ?? "Nog geen notities")
                     .font(.system(size: 13))
                     .foregroundStyle(item.notes == nil ? Theme.inkDim : Theme.ink)
                     .lineSpacing(3)
@@ -360,7 +360,7 @@ struct CraftItemDetailView: View {
             HStack(spacing: 6) {
                 Image(systemName: "trash")
                     .font(.system(size: 13))
-                Text(L.deleteItem)
+                Text("Verwijder item")
                     .font(.system(size: 14, weight: .semibold))
             }
             .foregroundStyle(Theme.coral)

@@ -27,7 +27,7 @@ struct SearchView: View {
                     VStack(spacing: 0) {
                         // Header
                         HStack {
-                            Text(L.searchTitle)
+                            Text("Zoeken")
                                 .font(.system(size: 26, weight: .bold))
                                 .foregroundStyle(Theme.ink)
                             Spacer()
@@ -40,7 +40,7 @@ struct SearchView: View {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 15))
                                 .foregroundStyle(query.isEmpty ? Theme.inkMute : Theme.primarySoft)
-                            TextField("", text: $query, prompt: Text(L.searchPlaceholder).foregroundStyle(Theme.inkMute))
+                            TextField("", text: $query, prompt: Text("Zoek in je stash...").foregroundStyle(Theme.inkMute))
                                 .font(.system(size: 14.5))
                                 .foregroundStyle(Theme.ink)
                                 .autocorrectionDisabled()
@@ -86,7 +86,7 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: 24) {
             // Trending tags
             VStack(alignment: .leading, spacing: 10) {
-                Text(L.popularTags)
+                Text("POPULAIRE TAGS")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.inkDim)
                     .tracking(1)
@@ -116,7 +116,7 @@ struct SearchView: View {
 
             // Platforms
             VStack(alignment: .leading, spacing: 10) {
-                Text(L.platforms)
+                Text("PLATFORMS")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.inkDim)
                     .tracking(1)
@@ -169,7 +169,7 @@ struct SearchView: View {
     private var searchResultsView: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("\(searchResults.count) \(L.results)")
+                Text("\(searchResults.count) \("resultaten")")
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.inkMute)
                 Spacer()
@@ -182,10 +182,10 @@ struct SearchView: View {
                     Text("\u{1F50D}")
                         .font(.system(size: 56))
                         .padding(.bottom, 8)
-                    Text(L.noResults)
+                    Text("Geen resultaten")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(Theme.ink)
-                    Text(L.tryDifferent)
+                    Text("Probeer een andere zoekterm")
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.inkMute)
                 }

@@ -21,7 +21,7 @@ struct FavoritesView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             // Header
                             HStack {
-                                Text(L.tabFavorites)
+                                Text("Favorieten")
                                     .font(.system(size: 26, weight: .bold))
                                     .foregroundStyle(Theme.ink)
                                 Spacer()
@@ -62,11 +62,11 @@ struct FavoritesView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(Theme.rose)
 
-            Text(L.noFavorites)
+            Text("Nog geen favorieten")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(Theme.ink)
 
-            Text(L.markFavorites)
+            Text("Tik op het hartje om items als favoriet te markeren")
                 .font(.system(size: 13.5))
                 .foregroundStyle(Theme.inkMute)
                 .multilineTextAlignment(.center)

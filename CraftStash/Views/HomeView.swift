@@ -97,33 +97,17 @@ struct HomeView: View {
 
             // Right: language flag + stash button
             HStack(spacing: 8) {
-                // Language flag
-                Button {
-                    // Toggle language
-                    let lang = LanguageManager.shared
-                    lang.current = lang.current == .nl ? .en : .nl
-                } label: {
-                    Text(LanguageManager.shared.current.flag)
-                        .font(.system(size: 14))
-                        .frame(width: 32, height: 32)
-                        .background(Theme.surface)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle().stroke(Theme.border, lineWidth: 1)
-                        )
-                }
-
                 // + Stash button
                 Menu {
                     Button {
                         showingImportSheet = true
                     } label: {
-                        Label(L.addLink, systemImage: "link.badge.plus")
+                        Label("Link toevoegen", systemImage: "link.badge.plus")
                     }
                     Button {
                         showingImagePicker = true
                     } label: {
-                        Label(L.saveScreenshot, systemImage: "photo.on.rectangle.angled")
+                        Label("Screenshot opslaan", systemImage: "photo.on.rectangle.angled")
                     }
                 } label: {
                     HStack(spacing: 4) {
@@ -151,7 +135,7 @@ struct HomeView: View {
                 .font(.system(size: 15))
                 .foregroundStyle(Theme.inkMute)
 
-            TextField("", text: $searchText, prompt: Text(L.searchPlaceholder).foregroundStyle(Theme.inkMute))
+            TextField("", text: $searchText, prompt: Text("Zoek in je stash...").foregroundStyle(Theme.inkMute))
                 .font(.system(size: 14.5))
                 .foregroundStyle(Theme.ink)
                 .tint(Theme.primary)
@@ -199,7 +183,7 @@ struct HomeView: View {
                         Text("\(items.count)")
                             .font(.system(size: 22, weight: .bold))
                             .foregroundStyle(Theme.ink)
-                        Text(L.itemsCount)
+                        Text("items")
                             .font(.system(size: 13))
                             .foregroundStyle(Theme.inkMute)
                     }
@@ -262,11 +246,11 @@ struct HomeView: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(L.tipTitle)
+                Text("Tip: Deel vanuit elke app")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(2)
-                Text(L.tipDesc)
+                Text("Tik op Delen en kies CraftStash")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.85))
                     .lineLimit(2)
@@ -379,7 +363,7 @@ struct HomeView: View {
                     try? data.write(to: fileURL)
 
                     let item = CraftItem(
-                        title: L.screenshotTitle,
+                        title: "Screenshot",
                         urlString: fileURL.absoluteString,
                         thumbnailURLString: fileURL.absoluteString,
                         sourcePlatform: "Screenshot"
@@ -416,7 +400,7 @@ struct HomeView: View {
             }
 
             let item = CraftItem(
-                title: shared.title ?? L.defaultItemTitle,
+                title: shared.title ?? "Knutselidee",
                 urlString: shared.urlString,
                 thumbnailURLString: thumbnailURL,
                 sourcePlatform: shared.sourcePlatform
