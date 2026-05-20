@@ -30,8 +30,15 @@ workflows:
           # 1. Initialize a fresh keychain
           keychain initialize
 
-          # 2. Fetch Distribution certificates + provisioning profiles
-          #    --create will create them if they don't exist yet
+          # 2. Generate an RSA private key for certificate creation
+          #    This is needed because existing certs on Apple portal don't have
+          #    their private key on this build machine. With --create and a fresh key,
+          #    Codemagic can create a NEW Distribution certificate.
+          openssl genrsa -out /tmp/cert_key.pem 2048
+          export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
+
+          # 3. Fetch Distribution certificates + provisioning profiles
+          #    --create will create new cert+profiles if needed
           #    --type IOS_APP_STORE ensures Distribution (not Development)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
@@ -41,10 +48,10 @@ workflows:
             --type IOS_APP_STORE \
             --create
 
-          # 3. Import certificates into the keychain
+          # 4. Import certificates into the keychain
           keychain add-certificates
 
-          # 4. Update Xcode project to use the downloaded profiles
+          # 5. Update Xcode project to use the downloaded profiles
           #    This switches targets to manual signing with correct profiles
           xcode-project use-profiles
 
