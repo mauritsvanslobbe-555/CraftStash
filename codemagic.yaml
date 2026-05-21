@@ -32,9 +32,19 @@ workflows:
           openssl genrsa -out /tmp/cert_key.pem 2048
           export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
 
-          pip3 install PyJWT --break-system-packages 2>/dev/null || pip3 install PyJWT
-          python3 "$CM_BUILD_DIR/scripts/revoke_distribution_certs.py"
+          # Revoke all existing Distribution certificates to free up slots
+          echo "=== Revoking existing Distribution certificates ==="
+          CERT_IDS=$(app-store-connect certificates list \
+            --type IOS_DISTRIBUTION \
+            --json | python3 -c "import json,sys;[print(c['id']) for c in json.load(sys.stdin)]") || true
 
+          for CERT_ID in $CERT_IDS; do
+            echo "Revoking certificate: $CERT_ID"
+            app-store-connect certificates delete "$CERT_ID" --ignore-not-found || true
+          done
+          echo "=== Done revoking certificates ==="
+
+          # Now create new certificate + provisioning profiles
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
