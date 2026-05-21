@@ -33,34 +33,11 @@ workflows:
           # Generate RSA key for new certificate
           openssl genrsa -out /tmp/cert_key.pem 2048
 
-          # Always revoke ALL existing Distribution certificates first.
-          # Each build generates a fresh private key, so old certs never match.
-          echo "=== Revoking all existing Distribution certificates ==="
-
-          # Debug: show raw list output (both DISTRIBUTION and IOS_DISTRIBUTION)
-          echo "--- Raw certificate list output ---"
+          # Revoke ALL existing Distribution certificates.
+          # Each build generates a fresh key, so old certs never match.
           set +e
-          app-store-connect certificates list \
-            --type DISTRIBUTION \
-            --type IOS_DISTRIBUTION 2>&1 | head -50
-          echo "--- End raw output ---"
-
-          # Try to get IDs and delete them
-          CERT_IDS=$(app-store-connect certificates list \
-            --type DISTRIBUTION \
-            --type IOS_DISTRIBUTION \
-            --json 2>&1 | python3 -c "import json,sys;d=json.load(sys.stdin);[print(c['id']) for c in (d if isinstance(d,list) else d.get('data',[]))]" 2>&1) || true
+          python3 "$CM_BUILD_DIR/scripts/revoke_distribution_certs.py"
           set -e
-
-          echo "Found cert IDs: $CERT_IDS"
-
-          for CERT_ID in $CERT_IDS; do
-            if [ -n "$CERT_ID" ] && [[ ! "$CERT_ID" == PARSE_ERROR* ]]; then
-              echo "Revoking certificate: $CERT_ID"
-              app-store-connect certificates delete "$CERT_ID" --ignore-not-found || true
-            fi
-          done
-          echo "=== Done revoking ==="
 
           # Now fetch signing files + create new certificate and profiles
           echo "=== Fetching signing files for main app ==="
