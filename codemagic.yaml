@@ -33,29 +33,27 @@ workflows:
           # Generate RSA key for new certificate
           openssl genrsa -out /tmp/cert_key.pem 2048
 
-          # Try to fetch signing files; if 409 (max certs), revoke and retry
+          # Always revoke ALL existing Distribution certificates first.
+          # Each build generates a fresh private key, so old certs never match.
+          echo "=== Revoking all existing Distribution certificates ==="
+          set +e
+          CERT_IDS=$(app-store-connect certificates list \
+            --type IOS_DISTRIBUTION \
+            --json 2>/dev/null | python3 -c "import json,sys;[print(c['id']) for c in json.load(sys.stdin)]" 2>/dev/null)
+          set -e
+
+          for CERT_ID in $CERT_IDS; do
+            echo "Revoking certificate: $CERT_ID"
+            app-store-connect certificates delete "$CERT_ID" --ignore-not-found || true
+          done
+          echo "=== Done revoking ==="
+
+          # Now fetch signing files + create new certificate and profiles
           echo "=== Fetching signing files for main app ==="
-          if ! app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --certificate-key=@file:/tmp/cert_key.pem \
-            --create 2>&1 | tee /tmp/fetch1.log; then
-
-            echo "=== Initial fetch failed, revoking old certificates ==="
-            CERT_IDS=$(app-store-connect certificates list \
-              --type IOS_DISTRIBUTION \
-              --json | python3 -c "import json,sys;[print(c['id']) for c in json.load(sys.stdin)]") || true
-
-            for CERT_ID in $CERT_IDS; do
-              echo "Revoking certificate: $CERT_ID"
-              app-store-connect certificates delete "$CERT_ID" --ignore-not-found || true
-            done
-
-            echo "=== Retrying fetch after revocation ==="
-            app-store-connect fetch-signing-files "$BUNDLE_ID" \
-              --type IOS_APP_STORE \
-              --certificate-key=@file:/tmp/cert_key.pem \
-              --create
-          fi
+            --create
 
           echo "=== Fetching signing files for share extension ==="
           app-store-connect fetch-signing-files "$EXTENSION_BUNDLE_ID" \
