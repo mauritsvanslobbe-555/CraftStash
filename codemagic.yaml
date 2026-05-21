@@ -49,19 +49,7 @@ workflows:
           CERT_IDS=$(app-store-connect certificates list \
             --type DISTRIBUTION \
             --type IOS_DISTRIBUTION \
-            --json 2>&1 | python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    if isinstance(data, list):
-        for c in data:
-            print(c.get('id', ''))
-    elif isinstance(data, dict):
-        for c in data.get('data', []):
-            print(c.get('id', ''))
-except Exception as e:
-    print(f'PARSE_ERROR: {e}', file=sys.stderr)
-" 2>&1) || true
+            --json 2>&1 | python3 -c "import json,sys;d=json.load(sys.stdin);[print(c['id']) for c in (d if isinstance(d,list) else d.get('data',[]))]" 2>&1) || true
           set -e
 
           echo "Found cert IDs: $CERT_IDS"
