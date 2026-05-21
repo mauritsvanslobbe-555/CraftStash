@@ -40,6 +40,23 @@ def main():
     print(f"Using Key ID: {key_id}")
     print(f"Using Issuer ID: {issuer_id}")
 
+    # Fix private key formatting — Codemagic may store literal \n instead of newlines
+    if "\\n" in private_key:
+        private_key = private_key.replace("\\n", "\n")
+    # Ensure the key has proper PEM structure
+    if "BEGIN" in private_key and "\n" not in private_key.strip():
+        # Key is all on one line, need to reformat
+        parts = private_key.strip().split("-----")
+        if len(parts) >= 5:
+            header = f"-----{parts[1]}-----"
+            footer = f"-----{parts[3]}-----"
+            key_data = parts[2].strip()
+            private_key = f"{header}\n{key_data}\n{footer}"
+
+    print(f"Private key starts with: {private_key[:30]}...")
+    print(f"Private key length: {len(private_key)}")
+    print(f"Private key has newlines: {'\\n' in private_key}")
+
     # Create JWT token
     token = jwt.encode(
         {
