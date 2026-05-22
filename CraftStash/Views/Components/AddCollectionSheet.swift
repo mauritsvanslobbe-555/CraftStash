@@ -238,7 +238,8 @@ struct AddCollectionSheet: View {
             try? FileManager.default.createDirectory(at: imageDir, withIntermediateDirectories: true)
             let fileURL = imageDir.appendingPathComponent(fileName)
             try? data.write(to: fileURL)
-            savedImagePath = fileURL.absoluteString
+            // Store relative path so it survives app container UUID changes
+            savedImagePath = "CollectionThumbnails/\(fileName)"
         }
 
         let collection = CraftCollection(

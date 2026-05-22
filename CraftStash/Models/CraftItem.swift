@@ -21,6 +21,47 @@ final class CraftItem {
 
     var thumbnailURL: URL? {
         guard let thumbnailURLString else { return nil }
+
+        // If it's already a full http(s) URL, return as-is
+        if thumbnailURLString.hasPrefix("http://") || thumbnailURLString.hasPrefix("https://") {
+            return URL(string: thumbnailURLString)
+        }
+
+        // If it's a file:// URL, try it directly first
+        if thumbnailURLString.hasPrefix("file://") {
+            let directURL = URL(string: thumbnailURLString)
+            if let directURL, FileManager.default.fileExists(atPath: directURL.path) {
+                return directURL
+            }
+            // File doesn't exist at absolute path (container UUID changed after update)
+            // Try to extract relative path and resolve against current Documents dir
+            if let directURL {
+                let pathComponents = directURL.pathComponents
+                // Look for known directories: "Thumbnails", "SavedImages", "CollectionThumbnails"
+                let knownDirs = ["Thumbnails", "SavedImages", "CollectionThumbnails"]
+                for dir in knownDirs {
+                    if let idx = pathComponents.firstIndex(of: dir),
+                       idx + 1 < pathComponents.count {
+                        let relativePath = pathComponents[idx...].joined(separator: "/")
+                        let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                        let resolvedURL = docsURL.appendingPathComponent(relativePath)
+                        if FileManager.default.fileExists(atPath: resolvedURL.path) {
+                            return resolvedURL
+                        }
+                    }
+                }
+            }
+            return directURL
+        }
+
+        // If it's a relative path (e.g., "Thumbnails/UUID.jpg")
+        let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let resolvedURL = docsURL.appendingPathComponent(thumbnailURLString)
+        if FileManager.default.fileExists(atPath: resolvedURL.path) {
+            return resolvedURL
+        }
+
+        // Last resort: try as URL string
         return URL(string: thumbnailURLString)
     }
 

@@ -87,7 +87,8 @@ actor LinkMetadataService {
 
                 do {
                     try data.write(to: fileURL)
-                    continuation.resume(returning: fileURL.absoluteString)
+                    // Store relative path so it survives app container UUID changes
+                    continuation.resume(returning: "Thumbnails/\(fileName)")
                 } catch {
                     continuation.resume(returning: nil)
                 }

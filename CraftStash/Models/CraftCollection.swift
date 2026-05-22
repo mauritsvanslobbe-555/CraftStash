@@ -18,6 +18,36 @@ final class CraftCollection {
 
     var thumbnailURL: URL? {
         guard let thumbnailImagePath else { return nil }
+
+        // If it's a file:// URL, try direct first, then resolve against current docs dir
+        if thumbnailImagePath.hasPrefix("file://") {
+            let directURL = URL(string: thumbnailImagePath)
+            if let directURL, FileManager.default.fileExists(atPath: directURL.path) {
+                return directURL
+            }
+            // Container UUID may have changed; extract relative path and resolve
+            if let directURL {
+                let pathComponents = directURL.pathComponents
+                if let idx = pathComponents.firstIndex(of: "CollectionThumbnails"),
+                   idx + 1 < pathComponents.count {
+                    let relativePath = pathComponents[idx...].joined(separator: "/")
+                    let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                    let resolvedURL = docsURL.appendingPathComponent(relativePath)
+                    if FileManager.default.fileExists(atPath: resolvedURL.path) {
+                        return resolvedURL
+                    }
+                }
+            }
+            return directURL
+        }
+
+        // Relative path
+        let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let resolvedURL = docsURL.appendingPathComponent(thumbnailImagePath)
+        if FileManager.default.fileExists(atPath: resolvedURL.path) {
+            return resolvedURL
+        }
+
         return URL(string: thumbnailImagePath)
     }
 

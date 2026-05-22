@@ -365,7 +365,7 @@ struct HomeView: View {
                     let item = CraftItem(
                         title: "Screenshot",
                         urlString: fileURL.absoluteString,
-                        thumbnailURLString: fileURL.absoluteString,
+                        thumbnailURLString: "SavedImages/\(fileName)",
                         sourcePlatform: "Screenshot"
                     )
                     await MainActor.run {
@@ -396,7 +396,7 @@ struct HomeView: View {
                 try? FileManager.default.createDirectory(at: imageDir, withIntermediateDirectories: true)
                 let localURL = imageDir.appendingPathComponent(imageFileName)
                 try? FileManager.default.copyItem(at: sharedImageURL, to: localURL)
-                thumbnailURL = localURL.absoluteString
+                thumbnailURL = "SavedImages/\(imageFileName)"
             }
 
             let item = CraftItem(
