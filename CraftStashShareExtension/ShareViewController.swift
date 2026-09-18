@@ -56,7 +56,7 @@ class ShareViewController: UIViewController {
 
         // App icon
         let iconLabel = UILabel()
-        iconLabel.text = "\u{2702}\u{FE0F}"
+        iconLabel.text = "\u{1F516}"
         iconLabel.font = .systemFont(ofSize: 42)
         iconLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(iconLabel)
