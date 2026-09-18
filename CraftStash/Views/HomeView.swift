@@ -72,15 +72,7 @@ struct HomeView: View {
         HStack {
             // Left: avatar + greeting
             HStack(spacing: 10) {
-                // Gradient avatar circle
-                Circle()
-                    .fill(Theme.accentGradient)
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Text("S")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.white)
-                    )
+                BrandLogo(size: 36)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("JOUW STASH")
@@ -250,7 +242,7 @@ struct HomeView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(2)
-                Text("Tik op Delen en kies CraftStash")
+                Text("Tik op Delen en kies StuffStash")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.85))
                     .lineLimit(2)
@@ -307,7 +299,7 @@ struct HomeView: View {
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(Theme.ink)
 
-                    Text("Bewaar je eerste idee vanuit Instagram, TikTok of een andere app -- tik op delen \u{2192} StuffStash.")
+                    Text("Bewaar je eerste idee vanuit Instagram, TikTok of een andere app -- tik op delen → StuffStash.")
                         .font(.system(size: 13.5))
                         .foregroundStyle(Theme.inkMute)
                         .multilineTextAlignment(.center)
