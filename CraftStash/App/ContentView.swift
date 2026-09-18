@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var selectedTab: Tab = .home
 
     enum Tab: String {
@@ -9,6 +10,20 @@ struct ContentView: View {
     }
 
     var body: some View {
+        Group {
+            if hasCompletedOnboarding {
+                mainTabView
+            } else {
+                OnboardingView {
+                    withAnimation {
+                        hasCompletedOnboarding = true
+                    }
+                }
+            }
+        }
+    }
+
+    private var mainTabView: some View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
