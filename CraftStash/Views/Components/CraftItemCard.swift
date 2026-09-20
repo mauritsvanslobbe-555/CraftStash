@@ -72,6 +72,19 @@ struct CraftItemCard: View {
 
             // Title + date area
             VStack(alignment: .leading, spacing: 4) {
+                if let firstCollection = item.collections?.first {
+                    HStack(spacing: 3) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 7.5))
+                        Text(firstCollection.name)
+                            .font(.system(size: 9.5, weight: .bold))
+                            .textCase(.uppercase)
+                            .tracking(0.3)
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(Theme.primarySoft)
+                }
+
                 Text(item.title)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.ink)
