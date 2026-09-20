@@ -25,7 +25,6 @@ class ShareViewController: UIViewController {
     private let checkmarkImageView = UIImageView()
 
     private var sharedURL: String?
-    private var sharedTitle: String?
     private var sharedImageData: Data?
     private var sharedImageFileName: String?
 
@@ -190,10 +189,13 @@ class ShareViewController: UIViewController {
         }
 
         for item in extensionItems {
-            if let attributedTitle = item.attributedContentText?.string, !attributedTitle.isEmpty {
-                sharedTitle = attributedTitle
-            }
-
+            // Note: we intentionally do NOT read item.attributedContentText here.
+            // Some apps (Instagram in particular) populate that field with
+            // auto-generated accessibility alt-text or other boilerplate rather
+            // than a real caption/title, which showed up as unexplained,
+            // unrelated words on saved items. The user can always type a name
+            // themselves below; otherwise the app falls back to a sensible
+            // generic title.
             guard let attachments = item.attachments else { continue }
 
             for attachment in attachments {
@@ -218,9 +220,6 @@ class ShareViewController: UIViewController {
                                 }
                                 self?.subtitleLabel.text = "Afbeelding klaar om op te slaan"
                             }
-                            if let title = self?.sharedTitle {
-                                self?.nameTextField.text = title
-                            }
                             self?.activityIndicator.stopAnimating()
                         }
                     }
@@ -237,9 +236,6 @@ class ShareViewController: UIViewController {
                                 let platform = self?.detectPlatform(from: urlString) ?? "Link"
                                 self?.subtitleLabel.text = "\(platform) link gevonden"
                             }
-                            if let title = self?.sharedTitle {
-                                self?.nameTextField.text = title
-                            }
                             self?.activityIndicator.stopAnimating()
                         }
                     }
@@ -255,9 +251,6 @@ class ShareViewController: UIViewController {
                                 self?.sharedURL = text
                                 let platform = self?.detectPlatform(from: text) ?? "Link"
                                 self?.subtitleLabel.text = "\(platform) link gevonden"
-                            }
-                            if let title = self?.sharedTitle {
-                                self?.nameTextField.text = title
                             }
                             self?.activityIndicator.stopAnimating()
                         }
