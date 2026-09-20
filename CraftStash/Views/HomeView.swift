@@ -5,15 +5,33 @@ import PhotosUI
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \CraftItem.dateAdded, order: .reverse) private var items: [CraftItem]
+    @Query(sort: \CraftCollection.name) private var collections: [CraftCollection]
     @State private var searchText = ""
     @State private var selectedItem: CraftItem?
     @State private var showingImportSheet = false
     @State private var showingImagePicker = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var activeFilter = "Alles"
+    @State private var filterMode: FilterMode = .kanaal
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @AppStorage("userName") private var userName = ""
+    @State private var showingNameEditor = false
+    @State private var nameDraft = ""
+
+    enum FilterMode {
+        case kanaal, onderwerp
+    }
 
     private let filters = ["Alles", "Video's", "Foto's", "YouTube", "Instagram", "TikTok", "Pinterest"]
+
+    private var onderwerpFilters: [String] {
+        ["Alles"] + collections.map(\.name)
+    }
+
+    private var greetingText: String {
+        let name = userName.trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? "Hoi" : "Hoi, \(name)"
+    }
 
     var filteredItems: [CraftItem] {
         var result = items
@@ -25,15 +43,24 @@ struct HomeView: View {
             }
         }
 
-        switch activeFilter {
-        case "Video's":
-            result = result.filter { $0.isVideo }
-        case "Foto's":
-            result = result.filter { !$0.isVideo }
-        case "Alles":
-            break
-        default:
-            result = result.filter { $0.sourcePlatform.localizedCaseInsensitiveContains(activeFilter) }
+        switch filterMode {
+        case .kanaal:
+            switch activeFilter {
+            case "Video's":
+                result = result.filter { $0.isVideo }
+            case "Foto's":
+                result = result.filter { !$0.isVideo }
+            case "Alles":
+                break
+            default:
+                result = result.filter { $0.sourcePlatform.localizedCaseInsensitiveContains(activeFilter) }
+            }
+        case .onderwerp:
+            if activeFilter != "Alles" {
+                result = result.filter { item in
+                    item.collections?.contains(where: { $0.name == activeFilter }) ?? false
+                }
+            }
         }
 
         return result
@@ -64,6 +91,15 @@ struct HomeView: View {
             .onAppear {
                 importPendingSharedItems()
             }
+            .alert("Jouw naam", isPresented: $showingNameEditor) {
+                TextField("Naam", text: $nameDraft)
+                Button("Opslaan") {
+                    userName = nameDraft.trimmingCharacters(in: .whitespaces)
+                }
+                Button("Annuleer", role: .cancel) { }
+            } message: {
+                Text("Zo begroeten we je voortaan op het Home-scherm.")
+            }
         }
     }
 
@@ -79,9 +115,19 @@ struct HomeView: View {
                         .font(.system(size: 9.5, weight: .medium, design: .monospaced))
                         .foregroundStyle(Theme.inkDim)
                         .tracking(1)
-                    Text("Hoi")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
+                    HStack(spacing: 4) {
+                        Text(greetingText)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.ink)
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.inkDim)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        nameDraft = userName
+                        showingNameEditor = true
+                    }
                 }
             }
 
@@ -193,14 +239,28 @@ struct HomeView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 8)
 
+                // Collections (visible + clickable on Home)
+                if !collections.isEmpty {
+                    collectionsRow
+                        .padding(.bottom, 14)
+                }
+
+                // Filter mode toggle (Kanaal / Onderwerp)
+                HStack(spacing: 6) {
+                    filterModeButton(.kanaal, label: "Kanaal", icon: "antenna.radiowaves.left.and.right")
+                    filterModeButton(.onderwerp, label: "Onderwerp", icon: "folder")
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+
                 // Filter chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(filters, id: \.self) { filter in
+                        ForEach(filterMode == .kanaal ? filters : onderwerpFilters, id: \.self) { filter in
                             SSFilterChip(
                                 label: filter,
                                 isActive: activeFilter == filter,
-                                platformColor: platformDotColor(for: filter)
+                                platformColor: chipColor(for: filter)
                             ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     activeFilter = filter
@@ -222,6 +282,87 @@ struct HomeView: View {
             }
             .padding(.top, 8)
         }
+    }
+
+    // MARK: - Collections Row
+    private var collectionsRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("JOUW COLLECTIES")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.inkDim)
+                    .tracking(1)
+                Spacer()
+                NavigationLink(destination: CollectionsView()) {
+                    Text("Alles")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.primarySoft)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(collections) { collection in
+                        NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                            collectionHomeTile(collection)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    private func collectionHomeTile(_ collection: CraftCollection) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Theme.color(for: collection.colorName))
+                    .frame(width: 92, height: 68)
+                Image(systemName: collection.icon)
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(collection.name)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                Text("\(collection.itemCount) items")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(Theme.inkMute)
+            }
+        }
+        .frame(width: 92)
+    }
+
+    // MARK: - Filter Mode Button
+    private func filterModeButton(_ mode: FilterMode, label: String, icon: String) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                filterMode = mode
+                activeFilter = "Alles"
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text(label)
+                    .font(.system(size: 12.5, weight: .semibold))
+            }
+            .foregroundStyle(filterMode == mode ? .white : Theme.inkMute)
+            .padding(.horizontal, 12)
+            .frame(height: 30)
+            .background(filterMode == mode ? Theme.primary : Theme.surface)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(filterMode == mode ? Theme.primary : Theme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Tip Card
@@ -339,6 +480,16 @@ struct HomeView: View {
         case "TikTok":     return Theme.ttCyan
         case "Pinterest":  return Theme.pinRed
         default: return nil
+        }
+    }
+
+    private func chipColor(for filter: String) -> Color? {
+        switch filterMode {
+        case .kanaal:
+            return platformDotColor(for: filter)
+        case .onderwerp:
+            guard let collection = collections.first(where: { $0.name == filter }) else { return nil }
+            return Theme.color(for: collection.colorName)
         }
     }
 
