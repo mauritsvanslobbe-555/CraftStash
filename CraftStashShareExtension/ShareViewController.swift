@@ -263,7 +263,7 @@ class ShareViewController: UIViewController {
 
     @objc private func saveTapped() {
         let userTitle = nameTextField.text?.trimmingCharacters(in: .whitespaces)
-        let finalTitle = (userTitle?.isEmpty == false) ? userTitle : sharedTitle
+        let finalTitle = (userTitle?.isEmpty == false) ? userTitle : nil
 
         // Save shared image
         if let imageData = sharedImageData {
